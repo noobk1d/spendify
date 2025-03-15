@@ -7,6 +7,16 @@ const xssclean = require("xss-clean");
 const cors = require("cors");
 const AppError = require("./src/utils/appError");
 const authRoute = require("./src/routes/authRoute");
+const profileRoute = require("./src/routes/profileRoute");
+const walletRoute = require("./src/routes/walletRoute");
+const transactionRoute = require("./src/routes/transactionRoute");
+const categoriesRoute = require("./src/routes/categoriesRoute");
+const recurringRoute = require("./src/routes/recurringRoutes");
+const budgetRoute = require("./src/routes/budgetRoute");
+const reportRoute = require("./src/routes/reportRoute");
+const dashboardRoute = require("./src/routes/dashboardRoute");
+const billRoute = require("./src/routes/billsRoute");
+
 const errorController = require("./src/controllers/errorController");
 
 const app = express();
@@ -34,7 +44,17 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 //ROUTE
+
 app.use("/spendify/api/auth", authRoute);
+app.use("/spendify/api/profile", profileRoute);
+app.use("/spendify/api/wallet", walletRoute);
+app.use("/spendify/api/transaction", transactionRoute);
+app.use("/spendify/api/categories", categoriesRoute);
+app.use("/spendify/api/recurring", recurringRoute);
+app.use("/spendify/api/budget", budgetRoute);
+app.use("/spendify/api/reports", reportRoute);
+app.use("/spendify/api/dashboard", dashboardRoute);
+app.use("/spendify/api/bills", billRoute);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server)`, 404));

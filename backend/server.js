@@ -1,4 +1,4 @@
-const dotenv = require("dotenv");
+require("./src/utils/cronJobs");
 const app = require("./app");
 
 // dotenv.config({ path: "./config.env" });

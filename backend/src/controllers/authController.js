@@ -1,10 +1,6 @@
-const sdk = require("node-appwrite");
 const catchAsync = require("../utils/catchAsync");
 const authService = require("../services/authService");
 const AppError = require("../utils/appError");
-const client = require("../config/appwrite");
-
-const account = new sdk.Account(client);
 
 exports.signUp = catchAsync(async (req, res, next) => {
   const { name, email, password, confirmPassword } = req.body;
@@ -34,20 +30,11 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Email and password are required!", 400));
   }
   const session = await authService.loginUser(email, password);
-  // console.log(session);
-  res.cookie("appwrite_session", session.$id, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-
   res.status(200).json({
     message: "User Logged in successfully!",
     data: {
       status: "success",
       email: session.email,
-      session,
     },
   });
 });

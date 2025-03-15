@@ -17,8 +17,10 @@
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "moment-timezone": "^0.5.47",
     "morgan": "^1.10.0",
     "node-appwrite": "^15.0.0",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.1.9",
     "xss-clean": "^0.1.4"
   }

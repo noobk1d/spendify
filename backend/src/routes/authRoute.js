@@ -9,6 +9,6 @@ const router = express.Router();
 
 //Auth
 router.post("/signup", authController.signUp);
-router.post("/login", authController.login, authController.generateJWT);
+router.post("/auth/login", authController.login, authController.generateJWT);
 
 module.exports = router;
