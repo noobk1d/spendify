@@ -101,12 +101,14 @@ exports.getDashboardReports = async (
       if (!dailyTrends[day]) {
         dailyTrends[day] = { income: {}, expense: {} };
       }
-      if (txn.type === "income") {
-        dailyTrends[day].income[txn.category] =
-          (dailyTrends[day].income[txn.category] || 0) + amount;
-      } else {
-        dailyTrends[day].expense[txn.category] =
-          (dailyTrends[day].expense[txn.category] || 0) + amount;
+      if (amount > 1000) {
+        if (txn.type === "income") {
+          dailyTrends[day].income[txn.category] =
+            (dailyTrends[day].income[txn.category] || 0) + amount;
+        } else {
+          dailyTrends[day].expense[txn.category] =
+            (dailyTrends[day].expense[txn.category] || 0) + amount;
+        }
       }
     });
 

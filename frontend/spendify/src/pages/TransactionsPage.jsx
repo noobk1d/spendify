@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Calendar,
+  CalendarIcon,
   Search,
   Filter,
   ChevronLeft,
@@ -13,7 +13,7 @@ import {
   Play,
   Trash2,
 } from "lucide-react";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/Profile/button";
 import { Input } from "../components/ui/Input";
 import {
   Tabs,
@@ -44,10 +44,13 @@ import {
   DialogTitle,
 } from "../components/ui/Profile/dialog";
 import { Skeleton } from "../components/ui/Profile/skeleton";
+import { DatePicker } from "../components/ui/Transactions/date-picker";
+import { DateRangePicker } from "../components/ui/Transactions/date-range-picker";
 import Sidebar from "./Sidebar";
 import TransactionForm from "../components/TransactionManagement/TransactionForm";
 import RecurringTransactionForm from "../components/TransactionManagement/RecurringTransactionForm";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 
 // Mock data for transactions
 const mockTransactions = [
@@ -194,7 +197,14 @@ export default function TransactionsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState("All Methods");
-  const [dateView, setDateView] = useState("weekly");
+
+  // State for date filtering
+  const [dateFilterType, setDateFilterType] = useState("weekly");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateRange, setDateRange] = useState({
+    from: null,
+    to: null,
+  });
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,7 +226,34 @@ export default function TransactionsPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter transactions based on search, category, and payment method
+  // Handle date filter type change
+  const handleDateFilterTypeChange = (value) => {
+    setDateFilterType(value);
+
+    // Reset to default date ranges based on selection
+    if (value === "weekly") {
+      setDateRange({
+        from: new Date(new Date().setDate(new Date().getDate() - 7)),
+        to: new Date(),
+      });
+    } else if (value === "monthly") {
+      setDateRange({
+        from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+        to: new Date(),
+      });
+    } else {
+      // For custom and single, reset the range
+      setDateRange({
+        from: null,
+        to: null,
+      });
+    }
+
+    // Reset page when filter changes
+    setCurrentPage(1);
+  };
+
+  // Filter transactions based on search, category, payment method, and date
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch = transaction.description
       .toLowerCase()
@@ -228,7 +265,42 @@ export default function TransactionsPage() {
       selectedPaymentMethod === "All Methods" ||
       transaction.paymentMethod === selectedPaymentMethod;
 
-    return matchesSearch && matchesCategory && matchesPaymentMethod;
+    // Date filtering
+    let matchesDate = true;
+    const transactionDate = new Date(transaction.date);
+
+    if (dateFilterType === "weekly") {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      matchesDate = transactionDate >= oneWeekAgo;
+    } else if (dateFilterType === "monthly") {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      matchesDate = transactionDate >= oneMonthAgo;
+    } else if (dateFilterType === "custom") {
+      if (dateRange.from && dateRange.to) {
+        const startDate = new Date(dateRange.from);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(dateRange.to);
+        endDate.setHours(23, 59, 59, 999);
+        matchesDate =
+          transactionDate >= startDate && transactionDate <= endDate;
+      } else if (dateRange.from) {
+        const startDate = new Date(dateRange.from);
+        startDate.setHours(0, 0, 0, 0);
+        matchesDate = transactionDate >= startDate;
+      }
+    } else if (dateFilterType === "single" && selectedDate) {
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      matchesDate = transactionDate >= start && transactionDate <= end;
+    }
+
+    return (
+      matchesSearch && matchesCategory && matchesPaymentMethod && matchesDate
+    );
   });
 
   // Calculate pagination
@@ -263,11 +335,30 @@ export default function TransactionsPage() {
   // Format date to display in a readable format
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return format(date, "MMM d, yyyy");
+  };
+
+  // Get date filter description
+  const getDateFilterDescription = () => {
+    if (dateFilterType === "weekly") {
+      return "Showing transactions from the past week";
+    } else if (dateFilterType === "monthly") {
+      return "Showing transactions from the past month";
+    } else if (dateFilterType === "custom" && dateRange.from) {
+      if (dateRange.to) {
+        return `Showing transactions from ${format(
+          dateRange.from,
+          "MMM d, yyyy"
+        )} to ${format(dateRange.to, "MMM d, yyyy")}`;
+      }
+      return `Showing transactions from ${format(
+        dateRange.from,
+        "MMM d, yyyy"
+      )}`;
+    } else if (dateFilterType === "single" && selectedDate) {
+      return `Showing transactions for ${format(selectedDate, "MMM d, yyyy")}`;
+    }
+    return "";
   };
 
   return (
@@ -279,7 +370,7 @@ export default function TransactionsPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Transaction Management
+                Transactions
               </h1>
               <p className="text-muted-foreground mt-1">
                 Manage your income and expenses
@@ -288,9 +379,9 @@ export default function TransactionsPage() {
 
             <div className="flex items-center gap-2 mt-4 md:mt-0">
               <Button
-                // variant="outline"
+                variant="outline"
                 size="sm"
-                className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+                className="flex items-center gap-1"
                 onClick={() => setNewTransactionOpen(true)}>
                 <Plus className="h-4 w-4" />
                 New Transaction
@@ -322,16 +413,38 @@ export default function TransactionsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <Select value={dateView} onValueChange={setDateView}>
-                        <SelectTrigger className="w-[130px]">
-                          <Calendar className="mr-2 h-4 w-4" />
+                      <Select
+                        value={dateFilterType}
+                        onValueChange={handleDateFilterTypeChange}>
+                        <SelectTrigger className="w-[150px]">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           <SelectValue placeholder="Date Range" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="weekly">Weekly</SelectItem>
                           <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="custom">Custom Range</SelectItem>
+                          <SelectItem value="single">Single Date</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      {dateFilterType === "custom" && (
+                        <div className="w-[250px]">
+                          <DateRangePicker
+                            dateRange={dateRange}
+                            onRangeChange={setDateRange}
+                          />
+                        </div>
+                      )}
+
+                      {dateFilterType === "single" && (
+                        <div className="w-[200px]">
+                          <DatePicker
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                          />
+                        </div>
+                      )}
 
                       <Select
                         value={selectedCategory}
@@ -368,6 +481,9 @@ export default function TransactionsPage() {
                 </CardHeader>
 
                 <CardContent>
+                  <div className="mb-2 text-sm text-muted-foreground">
+                    {getDateFilterDescription()}
+                  </div>
                   <div className="rounded-md border">
                     <div className="relative w-full overflow-auto">
                       <table className="w-full caption-bottom text-sm">
