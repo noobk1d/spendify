@@ -31,14 +31,14 @@ const CustomLabel = ({ viewBox, value1, value2 }) => {
         x={cx}
         y={cy - 10}
         textAnchor="middle"
-        className="text-xl sm:text-2xl font-bold fill-foreground">
+        className="text-2xl font-bold fill-foreground">
         ${value1}
       </text>
       <text
         x={cx}
         y={cy + 15}
         textAnchor="middle"
-        className="text-xs sm:text-sm fill-muted-foreground">
+        className="text-sm fill-muted-foreground">
         {value2}
       </text>
     </>
@@ -57,9 +57,9 @@ export function BudgetPieChart() {
   };
 
   return (
-    <div className="w-full h-full flex items-end justify-center">
-      <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 sm:gap-12 pb-4">
-        <div className="w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] md:w-[300px] md:h-[300px] -ml-6">
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="flex items-center gap-12">
+        <div className="w-[300px] h-[300px] -ml-6">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -109,40 +109,32 @@ export function BudgetPieChart() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Total Budget
-              </p>
-              <p className="text-base sm:text-lg font-bold">${totalBudget}</p>
+              <p className="text-sm text-muted-foreground">Total Budget</p>
+              <p className="text-lg font-bold">${totalBudget}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Total Spent
-              </p>
-              <p className="text-base sm:text-lg font-bold">${totalSpent}</p>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-lg font-bold">${totalSpent}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Remaining
-              </p>
-              <p className="text-base sm:text-lg font-bold">
-                ${remainingBudget}
-              </p>
+              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-lg font-bold">${remainingBudget}</p>
             </div>
           </div>
         </div>
