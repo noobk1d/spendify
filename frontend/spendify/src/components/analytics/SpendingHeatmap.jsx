@@ -1,76 +1,90 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "../ui/button"
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "../ui/Button";
 
 export function SpendingHeatmap({ timeframe }) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Generate random spending data
   const generateSpendingData = () => {
-    const data = {}
-    const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
+    const data = {};
+    const daysInMonth = getDaysInMonth(
+      currentDate.getFullYear(),
+      currentDate.getMonth()
+    );
 
     for (let i = 1; i <= daysInMonth; i++) {
       // Random spending between $0 and $200
-      data[i] = Math.floor(Math.random() * 200)
+      data[i] = Math.floor(Math.random() * 200);
     }
 
-    return data
-  }
+    return data;
+  };
 
-  const spendingData = generateSpendingData()
+  const spendingData = generateSpendingData();
 
   // Get color intensity based on spending amount
   const getColorIntensity = (amount) => {
-    if (amount === 0) return "bg-gray-100"
-    if (amount < 20) return "bg-green-100"
-    if (amount < 50) return "bg-green-200"
-    if (amount < 100) return "bg-green-300"
-    if (amount < 150) return "bg-green-400"
-    return "bg-green-500"
-  }
+    if (amount === 0) return "bg-gray-100";
+    if (amount < 20) return "bg-green-100";
+    if (amount < 50) return "bg-green-200";
+    if (amount < 100) return "bg-green-300";
+    if (amount < 150) return "bg-green-400";
+    return "bg-green-500";
+  };
 
   // Navigation functions
   const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  }
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+    );
+  };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-  }
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+    );
+  };
 
   // Calendar rendering
-  const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
-  const firstDayOfMonth = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth())
+  const daysInMonth = getDaysInMonth(
+    currentDate.getFullYear(),
+    currentDate.getMonth()
+  );
+  const firstDayOfMonth = getFirstDayOfMonth(
+    currentDate.getFullYear(),
+    currentDate.getMonth()
+  );
 
-  const dayNames = ["S", "M", "T", "W", "T", "F", "S"]
-  const monthName = currentDate.toLocaleString("default", { month: "long" })
-  const year = currentDate.getFullYear()
+  const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+  const monthName = currentDate.toLocaleString("default", { month: "long" });
+  const year = currentDate.getFullYear();
 
   // Generate calendar days
-  const calendarDays = []
+  const calendarDays = [];
 
   // Add empty cells for days before the first day of the month
   for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(<div key={`empty-${i}`} className="h-6 w-6"></div>)
+    calendarDays.push(<div key={`empty-${i}`} className="h-6 w-6"></div>);
   }
 
   // Add cells for each day of the month
   for (let day = 1; day <= daysInMonth; day++) {
-    const spending = spendingData[day] || 0
+    const spending = spendingData[day] || 0;
     calendarDays.push(
-      <div key={day} className="relative flex h-6 w-6 items-center justify-center transition-transform hover:scale-110">
+      <div
+        key={day}
+        className="relative flex h-6 w-6 items-center justify-center transition-transform hover:scale-110">
         <div
           className={`
             absolute inset-1 rounded-full transform transition-all duration-300
             ${getColorIntensity(spending)}
-          `}
-        ></div>
+          `}></div>
         <span className="relative z-10 text-[10px] font-medium">{day}</span>
-      </div>,
-    )
+      </div>
+    );
   }
 
   return (
@@ -80,10 +94,18 @@ export function SpendingHeatmap({ timeframe }) {
           {monthName} {year}
         </div>
         <div className="flex items-center space-x-1">
-          <Button variant="outline" size="icon" className="h-6 w-6" onClick={prevMonth}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-6 w-6"
+            onClick={prevMonth}>
             <ChevronLeft className="h-3 w-3" />
           </Button>
-          <Button variant="outline" size="icon" className="h-6 w-6" onClick={nextMonth}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-6 w-6"
+            onClick={nextMonth}>
             <ChevronRight className="h-3 w-3" />
           </Button>
         </div>
@@ -91,7 +113,9 @@ export function SpendingHeatmap({ timeframe }) {
 
       <div className="grid grid-cols-7 gap-1 justify-items-center">
         {dayNames.map((day) => (
-          <div key={day} className="text-center text-[10px] font-medium text-muted-foreground">
+          <div
+            key={day}
+            className="text-center text-[10px] font-medium text-muted-foreground">
             {day}
           </div>
         ))}
@@ -125,15 +149,14 @@ export function SpendingHeatmap({ timeframe }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Helper functions
 function getDaysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate()
+  return new Date(year, month + 1, 0).getDate();
 }
 
 function getFirstDayOfMonth(year, month) {
-  return new Date(year, month, 1).getDay()
+  return new Date(year, month, 1).getDay();
 }
-
