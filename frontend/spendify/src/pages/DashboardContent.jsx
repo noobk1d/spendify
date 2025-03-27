@@ -19,7 +19,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/Dashboard/Card";
+} from "../components/ui/Dashboard/card";
 import { Button } from "../components/ui/Dashboard/button";
 import {
   Avatar,
