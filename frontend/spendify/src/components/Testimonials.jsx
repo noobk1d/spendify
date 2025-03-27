@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Card } from "../components/ui/Dashboard/Card";
+import { Card } from "../components/ui/Dashboard/card";
 
 const testimonials = [
   {
