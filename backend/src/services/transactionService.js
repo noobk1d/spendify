@@ -139,15 +139,38 @@ exports.deleteTransaction = async (transactionId, userId) => {
   }
 };
 
-exports.getTransactions = async (filters) => {
+exports.getTransactions = async (userId, filters) => {
   try {
+    console.log(filters);
     let queryFilters = [];
+    queryFilters.push(Query.equal("userId", userId));
 
-    // 🔹 Apply Filters Dynamically
-    if (filters.startDate && filters.endDate) {
+    // 🔹 Apply Date Filters Based on `filterType`
+    const currentDate = new Date();
+    if (filters.filterType === "weekly") {
+      let startDate = new Date();
+      startDate.setDate(currentDate.getDate() - 7); // Last 7 days
+      queryFilters.push(
+        Query.greaterThanEqual("date", startDate.toISOString())
+      );
+      queryFilters.push(Query.lessThanEqual("date", currentDate.toISOString()));
+    } else if (filters.filterType === "monthly") {
+      let startDate = new Date();
+      startDate.setMonth(currentDate.getMonth() - 1); // Last 1 month
+      queryFilters.push(
+        Query.greaterThanEqual("date", startDate.toISOString())
+      );
+      queryFilters.push(Query.lessThanEqual("date", currentDate.toISOString()));
+    } else if (
+      filters.filterType === "custom" &&
+      filters.startDate &&
+      filters.endDate
+    ) {
       queryFilters.push(Query.greaterThanEqual("date", filters.startDate));
       queryFilters.push(Query.lessThanEqual("date", filters.endDate));
     }
+
+    // 🔹 Apply Additional Filters
     if (filters.category) {
       queryFilters.push(Query.equal("category", filters.category));
     }

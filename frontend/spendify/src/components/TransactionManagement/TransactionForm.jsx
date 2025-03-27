@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/Profile/button";
 import { Input } from "../ui/Input";
 import { Label } from "../ui/Profile/label";
 import {
@@ -11,165 +11,184 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/Profile/select";
-import { DialogFooter } from "../ui/Profile/dialog";
+import { RadioGroup, RadioGroupItem } from "../ui/Profile/radio-group";
+import { toast } from "sonner";
 
-export default function TransactionForm({
-  onSubmit,
-  categories = [],
-  paymentMethods = [],
-}) {
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
-    description: "",
-    amount: "",
-    category: "",
-    paymentMethod: "",
-  });
+export default function TransactionForm({ onClose, onSubmit }) {
+  const [transactionType, setTransactionType] = useState("expense");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [errors, setErrors] = useState({});
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error when field is updated
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: null,
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
-    }
-
-    if (!formData.amount) {
-      newErrors.amount = "Amount is required";
-    } else if (isNaN(Number(formData.amount))) {
-      newErrors.amount = "Amount must be a number";
-    }
-
-    if (!formData.category) {
-      newErrors.category = "Category is required";
-    }
-
-    if (!formData.paymentMethod) {
-      newErrors.paymentMethod = "Payment method is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      // Convert amount to number and handle income/expense
-      const amountValue =
-        formData.category === "Income"
-          ? Math.abs(Number(formData.amount))
-          : -Math.abs(Number(formData.amount));
-
-      onSubmit({
-        ...formData,
-        amount: amountValue,
+    if (!amount || !category || !description || !paymentMethod) {
+      toast.error("Validation Error", {
+        description: "Please fill in all required fields",
+        duration: 5000,
+        className: "bg-red-50 border-red-200",
+        style: {
+          background: "rgb(254 242 242)",
+          border: "1px solid rgb(254 202 202)",
+          color: "rgb(185 28 28)",
+        },
       });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const formData = {
+        amount,
+        type: transactionType,
+        category,
+        description,
+        date,
+        paymentMethod,
+      };
+
+      await onSubmit(formData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Transaction Failed", {
+        description: "Failed to submit transaction. Please try again.",
+        duration: 5000,
+        className: "bg-red-50 border-red-200",
+        style: {
+          background: "rgb(254 242 242)",
+          border: "1px solid rgb(254 202 202)",
+          color: "rgb(185 28 28)",
+        },
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="grid gap-4 py-4">
-        <div className="grid gap-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={(e) => handleChange("date", e.target.value)}
-          />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <RadioGroup
+        defaultValue="expense"
+        className="flex gap-4"
+        onValueChange={setTransactionType}>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="expense" id="expense" />
+          <Label htmlFor="expense">Expense</Label>
         </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="description">Description</Label>
-          <Input
-            id="description"
-            placeholder="Enter transaction description"
-            value={formData.description}
-            onChange={(e) => handleChange("description", e.target.value)}
-          />
-          {errors.description && (
-            <p className="text-sm text-destructive">{errors.description}</p>
-          )}
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="income" id="income" />
+          <Label htmlFor="income">Income</Label>
         </div>
+      </RadioGroup>
 
-        <div className="grid gap-2">
-          <Label htmlFor="amount">Amount</Label>
+      <div className="space-y-2">
+        <Label htmlFor="amount">Amount</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
           <Input
             id="amount"
+            type="number"
+            className="pl-7"
             placeholder="0.00"
-            value={formData.amount}
-            onChange={(e) => handleChange("amount", e.target.value)}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
           />
-          {errors.amount && (
-            <p className="text-sm text-destructive">{errors.amount}</p>
-          )}
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="category">Category</Label>
-          <Select
-            value={formData.category}
-            onValueChange={(value) => handleChange("category", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.category && (
-            <p className="text-sm text-destructive">{errors.category}</p>
-          )}
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="paymentMethod">Payment Method</Label>
-          <Select
-            value={formData.paymentMethod}
-            onValueChange={(value) => handleChange("paymentMethod", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select payment method" />
-            </SelectTrigger>
-            <SelectContent>
-              {paymentMethods.map((method) => (
-                <SelectItem key={method} value={method}>
-                  {method}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.paymentMethod && (
-            <p className="text-sm text-destructive">{errors.paymentMethod}</p>
-          )}
         </div>
       </div>
 
-      <DialogFooter>
-        <Button type="submit">Save Transaction</Button>
-      </DialogFooter>
+      <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {transactionType === "expense" ? (
+              <>
+                <SelectItem value="shopping">Shopping</SelectItem>
+                <SelectItem value="groceries">Groceries</SelectItem>
+                <SelectItem value="entertainment">Entertainment</SelectItem>
+                <SelectItem value="bills">Bills & Utilities</SelectItem>
+                <SelectItem value="transportation">Transportation</SelectItem>
+                <SelectItem value="health">Health</SelectItem>
+                <SelectItem value="education">Education</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </>
+            ) : (
+              <>
+                <SelectItem value="salary">Salary</SelectItem>
+                <SelectItem value="freelance">Freelance</SelectItem>
+                <SelectItem value="investments">Investments</SelectItem>
+                <SelectItem value="gifts">Gifts</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="paymentMethod">Payment Method</Label>
+        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select payment method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cash">Cash</SelectItem>
+            <SelectItem value="bank">Bank Transfer</SelectItem>
+            <SelectItem value="credit">Credit Card</SelectItem>
+            <SelectItem value="debit">Debit Card</SelectItem>
+            <SelectItem value="upi">UPI</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Input
+          id="description"
+          placeholder="Transaction description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="date">Date</Label>
+        <Input
+          id="date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 mt-6">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="bg-purple-600 hover:bg-purple-700 text-white"
+          disabled={isSubmitting}>
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Adding...
+            </div>
+          ) : (
+            "Add Transaction"
+          )}
+        </Button>
+      </div>
     </form>
   );
 }

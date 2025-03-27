@@ -51,120 +51,35 @@ import TransactionForm from "../components/TransactionManagement/TransactionForm
 import RecurringTransactionForm from "../components/TransactionManagement/RecurringTransactionForm";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-
-// Mock data for transactions
-const mockTransactions = [
-  {
-    id: 1,
-    date: "2025-03-18",
-    description: "Grocery Shopping",
-    amount: -85.42,
-    category: "Food",
-    paymentMethod: "Credit Card",
-  },
-  {
-    id: 2,
-    date: "2025-03-17",
-    description: "Monthly Salary",
-    amount: 2450.0,
-    category: "Income",
-    paymentMethod: "Bank Transfer",
-  },
-  {
-    id: 3,
-    date: "2025-03-16",
-    description: "Electric Bill",
-    amount: -124.56,
-    category: "Utilities",
-    paymentMethod: "Bank Transfer",
-  },
-  {
-    id: 4,
-    date: "2025-03-15",
-    description: "Coffee Shop",
-    amount: -4.5,
-    category: "Food",
-    paymentMethod: "Cash",
-  },
-  {
-    id: 5,
-    date: "2025-03-14",
-    description: "Uber Ride",
-    amount: -18.75,
-    category: "Transportation",
-    paymentMethod: "Credit Card",
-  },
-  {
-    id: 6,
-    date: "2025-03-13",
-    description: "Freelance Work",
-    amount: 350.0,
-    category: "Income",
-    paymentMethod: "Bank Transfer",
-  },
-  {
-    id: 7,
-    date: "2025-03-12",
-    description: "Phone Bill",
-    amount: -65.0,
-    category: "Utilities",
-    paymentMethod: "Credit Card",
-  },
-  {
-    id: 8,
-    date: "2025-03-11",
-    description: "Restaurant Dinner",
-    amount: -42.8,
-    category: "Food",
-    paymentMethod: "Credit Card",
-  },
-];
+import { formatCurrency } from "../lib/utils";
 
 // Mock data for recurring transactions
 const mockRecurringTransactions = [
   {
     id: 1,
     description: "Netflix Subscription",
-    amount: -15.99,
     category: "Entertainment",
     frequency: "Monthly",
-    nextDate: "2025-04-05",
+    nextDate: "2024-04-15",
+    amount: -14.99,
     active: true,
   },
   {
     id: 2,
-    description: "Rent Payment",
-    amount: -1200.0,
-    category: "Housing",
+    description: "Salary",
+    category: "Income",
     frequency: "Monthly",
-    nextDate: "2025-04-01",
+    nextDate: "2024-04-01",
+    amount: 5000,
     active: true,
   },
   {
     id: 3,
     description: "Gym Membership",
-    amount: -49.99,
     category: "Health",
     frequency: "Monthly",
-    nextDate: "2025-04-10",
-    active: true,
-  },
-  {
-    id: 4,
-    description: "Salary",
-    amount: 2450.0,
-    category: "Income",
-    frequency: "Monthly",
-    nextDate: "2025-04-15",
-    active: true,
-  },
-  {
-    id: 5,
-    description: "Internet Bill",
-    amount: -59.99,
-    category: "Utilities",
-    frequency: "Monthly",
-    nextDate: "2025-04-07",
+    nextDate: "2024-04-10",
+    amount: -29.99,
     active: false,
   },
 ];
@@ -190,7 +105,9 @@ export default function TransactionsPage() {
 
   // State for transactions
   const [transactions, setTransactions] = useState([]);
-  const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const [recurringTransactions, setRecurringTransactions] = useState(
+    mockRecurringTransactions
+  );
 
   // State for filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -199,11 +116,11 @@ export default function TransactionsPage() {
     useState("All Methods");
 
   // State for date filtering
-  const [dateFilterType, setDateFilterType] = useState("weekly");
+  const [dateFilterType, setDateFilterType] = useState("monthly");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dateRange, setDateRange] = useState({
-    from: null,
-    to: null,
+    from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+    to: new Date(),
   });
 
   // State for pagination
@@ -215,16 +132,42 @@ export default function TransactionsPage() {
   const [newRecurringOpen, setNewRecurringOpen] = useState(false);
   const [editRecurringId, setEditRecurringId] = useState(null);
 
-  // Load data with simulated delay
+  // Load data with API call
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setTransactions(mockTransactions);
-      setRecurringTransactions(mockRecurringTransactions);
-      setLoading(false);
-    }, 1000);
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        let url = `http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916?filterType=${dateFilterType}`;
 
-    return () => clearTimeout(timer);
-  }, []);
+        if (dateFilterType === "custom" && dateRange.from && dateRange.to) {
+          url += `&startDate=${dateRange.from}&endDate=${dateRange.to}`;
+        }
+
+        if (selectedCategory !== "All Categories") {
+          url += `&category=${encodeURIComponent(selectedCategory)}`;
+        }
+
+        if (selectedPaymentMethod !== "All Methods") {
+          url += `&paymentMethod=${encodeURIComponent(selectedPaymentMethod)}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Failed to fetch transactions");
+        }
+        const result = await response.json();
+        if (result.status === "success") {
+          setTransactions(result.data);
+        }
+      } catch (err) {
+        console.error("Error fetching transactions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [dateFilterType, selectedCategory, selectedPaymentMethod, dateRange]);
 
   // Handle date filter type change
   const handleDateFilterTypeChange = (value) => {
@@ -255,7 +198,7 @@ export default function TransactionsPage() {
 
   // Filter transactions based on search, category, payment method, and date
   const filteredTransactions = transactions.filter((transaction) => {
-    const matchesSearch = transaction.description
+    const matchesSearch = transaction.note
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
@@ -538,34 +481,45 @@ export default function TransactionsPage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.2 }}
-                                className="border-b transition-colors hover:bg-muted/50">
-                                <td className="p-4 align-middle">
+                                className={`border-b transition-colors hover:bg-muted/50 ${
+                                  transaction.type === "income"
+                                    ? "bg-green-50/50"
+                                    : "bg-red-50/50"
+                                }`}>
+                                <td className="p-4 align-middle text-sm">
                                   {formatDate(transaction.date)}
                                 </td>
-                                <td className="p-4 align-middle font-medium">
-                                  {transaction.description}
+                                <td className="p-4 align-middle">
+                                  <div className="font-medium">
+                                    {transaction.note}
+                                  </div>
                                 </td>
                                 <td className="p-4 align-middle">
                                   <Badge
                                     variant={
-                                      transaction.category === "Income"
+                                      transaction.type === "income"
                                         ? "outline"
                                         : "secondary"
+                                    }
+                                    className={
+                                      transaction.type === "income"
+                                        ? "border-green-200 bg-green-100 text-green-700"
+                                        : "border-red-200 bg-red-100 text-red-700"
                                     }>
                                     {transaction.category}
                                   </Badge>
                                 </td>
-                                <td className="p-4 align-middle">
+                                <td className="p-4 align-middle text-sm">
                                   {transaction.paymentMethod}
                                 </td>
                                 <td
                                   className={`p-4 align-middle text-right font-medium ${
-                                    transaction.amount >= 0
+                                    transaction.type === "income"
                                       ? "text-green-600"
                                       : "text-red-600"
                                   }`}>
-                                  {transaction.amount >= 0 ? "+" : ""}$
-                                  {Math.abs(transaction.amount).toFixed(2)}
+                                  {transaction.type === "income" ? "+" : "-"}
+                                  {formatCurrency(Math.abs(transaction.amount))}
                                 </td>
                               </motion.tr>
                             ))
@@ -690,123 +644,83 @@ export default function TransactionsPage() {
                           </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
-                          {loading ? (
-                            Array(3)
-                              .fill(0)
-                              .map((_, index) => (
-                                <tr
-                                  key={index}
-                                  className="border-b transition-colors hover:bg-muted/50">
-                                  <td className="p-4 align-middle">
-                                    <Skeleton className="h-5 w-40" />
-                                  </td>
-                                  <td className="p-4 align-middle">
-                                    <Skeleton className="h-5 w-20" />
-                                  </td>
-                                  <td className="p-4 align-middle">
-                                    <Skeleton className="h-5 w-20" />
-                                  </td>
-                                  <td className="p-4 align-middle">
-                                    <Skeleton className="h-5 w-24" />
-                                  </td>
-                                  <td className="p-4 align-middle text-right">
-                                    <Skeleton className="h-5 w-16 ml-auto" />
-                                  </td>
-                                  <td className="p-4 align-middle text-center">
-                                    <Skeleton className="h-5 w-16 mx-auto" />
-                                  </td>
-                                  <td className="p-4 align-middle text-center">
-                                    <Skeleton className="h-8 w-24 mx-auto" />
-                                  </td>
-                                </tr>
-                              ))
-                          ) : recurringTransactions.length > 0 ? (
-                            recurringTransactions.map((transaction) => (
-                              <motion.tr
-                                key={transaction.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="border-b transition-colors hover:bg-muted/50">
-                                <td className="p-4 align-middle font-medium">
-                                  {transaction.description}
-                                </td>
-                                <td className="p-4 align-middle">
-                                  <Badge
-                                    variant={
-                                      transaction.category === "Income"
-                                        ? "outline"
-                                        : "secondary"
-                                    }>
-                                    {transaction.category}
-                                  </Badge>
-                                </td>
-                                <td className="p-4 align-middle">
-                                  {transaction.frequency}
-                                </td>
-                                <td className="p-4 align-middle">
-                                  {formatDate(transaction.nextDate)}
-                                </td>
-                                <td
-                                  className={`p-4 align-middle text-right font-medium ${
-                                    transaction.amount >= 0
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}>
-                                  {transaction.amount >= 0 ? "+" : ""}$
-                                  {Math.abs(transaction.amount).toFixed(2)}
-                                </td>
-                                <td className="p-4 align-middle text-center">
-                                  <Badge
-                                    variant={
-                                      transaction.active ? "default" : "outline"
-                                    }>
-                                    {transaction.active ? "Active" : "Paused"}
-                                  </Badge>
-                                </td>
-                                <td className="p-4 align-middle">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        handleEditRecurring(transaction.id)
-                                      }>
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        handleToggleRecurring(transaction.id)
-                                      }>
-                                      {transaction.active ? (
-                                        <Pause className="h-4 w-4" />
-                                      ) : (
-                                        <Play className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        handleDeleteRecurring(transaction.id)
-                                      }>
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </motion.tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan={7}
-                                className="p-4 text-center text-muted-foreground">
-                                No recurring transactions found
+                          {recurringTransactions.map((transaction) => (
+                            <motion.tr
+                              key={transaction.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="border-b transition-colors hover:bg-muted/50">
+                              <td className="p-4 align-middle font-medium">
+                                {transaction.description}
                               </td>
-                            </tr>
-                          )}
+                              <td className="p-4 align-middle">
+                                <Badge
+                                  variant={
+                                    transaction.category === "Income"
+                                      ? "outline"
+                                      : "secondary"
+                                  }>
+                                  {transaction.category}
+                                </Badge>
+                              </td>
+                              <td className="p-4 align-middle">
+                                {transaction.frequency}
+                              </td>
+                              <td className="p-4 align-middle">
+                                {formatDate(transaction.nextDate)}
+                              </td>
+                              <td
+                                className={`p-4 align-middle text-right font-medium ${
+                                  transaction.amount >= 0
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}>
+                                {transaction.amount >= 0 ? "+" : "-"}
+                                {formatCurrency(Math.abs(transaction.amount))}
+                              </td>
+                              <td className="p-4 align-middle text-center">
+                                <Badge
+                                  variant={
+                                    transaction.active ? "default" : "outline"
+                                  }>
+                                  {transaction.active ? "Active" : "Paused"}
+                                </Badge>
+                              </td>
+                              <td className="p-4 align-middle">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      handleEditRecurring(transaction.id)
+                                    }>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      handleToggleRecurring(transaction.id)
+                                    }>
+                                    {transaction.active ? (
+                                      <Pause className="h-4 w-4" />
+                                    ) : (
+                                      <Play className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      handleDeleteRecurring(transaction.id)
+                                    }>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>

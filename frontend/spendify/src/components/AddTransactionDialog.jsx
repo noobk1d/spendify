@@ -6,24 +6,84 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/Dashboard/dialog";
-import { Button } from "../components/ui/Dashboard/button";
-import { Input } from "../components/ui/Dashboard/input";
-import { Label } from "../components/ui/Dashboard/label";
+} from "./ui/Dashboard/dialog";
+import { Button } from "./ui/Dashboard/button";
+import { Input } from "./ui/Dashboard/input";
+import { Label } from "./ui/Dashboard/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/Dashboard/select";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "../components/ui/Dashboard/radio-group";
+} from "./ui/Dashboard/select";
+import { RadioGroup, RadioGroupItem } from "./ui/Dashboard/radio-group";
+import { toast } from "sonner";
 
 export function AddTransactionDialog({ open, onOpenChange }) {
   const [transactionType, setTransactionType] = useState("expense");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!amount || !category || !description || !paymentMethod) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Number(amount),
+            type: transactionType,
+            paymentMethod: paymentMethod.toLowerCase(),
+            category: category.toLowerCase(),
+            note: description,
+            date: date,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success === true) {
+        toast.success("Transaction added successfully!", {
+          description: `$${amount} ${transactionType} added to ${category}`,
+          duration: 3000,
+        });
+        // Reset form
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setPaymentMethod("");
+        setDate(new Date().toISOString().split("T")[0]);
+        // Close dialog with animation
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 500);
+      } else {
+        toast.error(result.message || "Failed to add transaction", {
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error adding transaction:", error);
+      toast.error("Failed to add transaction");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,6 +122,8 @@ export function AddTransactionDialog({ open, onOpenChange }) {
                 type="number"
                 className="pl-7"
                 placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
               />
             </div>
           </div>
@@ -70,7 +132,7 @@ export function AddTransactionDialog({ open, onOpenChange }) {
             <Label htmlFor="category" className="text-right">
               Category
             </Label>
-            <Select>
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -84,6 +146,9 @@ export function AddTransactionDialog({ open, onOpenChange }) {
                     <SelectItem value="transportation">
                       Transportation
                     </SelectItem>
+                    <SelectItem value="health">Health</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </>
                 ) : (
                   <>
@@ -91,8 +156,25 @@ export function AddTransactionDialog({ open, onOpenChange }) {
                     <SelectItem value="freelance">Freelance</SelectItem>
                     <SelectItem value="investments">Investments</SelectItem>
                     <SelectItem value="gifts">Gifts</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </>
                 )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="paymentMethod" className="text-right">
+              Payment Method
+            </Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="bank">Bank Transfer</SelectItem>
+                <SelectItem value="credit">Credit Card</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -105,6 +187,8 @@ export function AddTransactionDialog({ open, onOpenChange }) {
               id="description"
               placeholder="Transaction description"
               className="col-span-3"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
@@ -116,7 +200,8 @@ export function AddTransactionDialog({ open, onOpenChange }) {
               id="date"
               type="date"
               className="col-span-3"
-              defaultValue={new Date().toISOString().split("T")[0]}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
           </div>
         </div>
@@ -126,8 +211,9 @@ export function AddTransactionDialog({ open, onOpenChange }) {
           </Button>
           <Button
             className="bg-purple-600 hover:bg-purple-700 text-white"
-            onClick={() => onOpenChange(false)}>
-            Add Transaction
+            onClick={handleSubmit}
+            disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Transaction"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -29,8 +29,12 @@ export default function Sidebar() {
 
   return (
     <div className="flex h-screen w-64 flex-col bg-card border-r">
-      <div className="flex h-16 items-center border-b px-4">
-        <h1 className="text-xl font-bold">Spendify</h1>
+      <div className="flex h-20 items-center border-b px-4">
+        <img
+          src="/Spendify-removebg-preview.png"
+          alt="Spendify Logo"
+          className="h-14 w-auto transition-transform hover:scale-105"
+        />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navigation.map((item) => {

@@ -1,17 +1,17 @@
 const walletService = require("./walletService");
 const transactionService = require("./transactionService");
 
-exports.getDashboardData = async (userId, startDate, endDate) => {
+exports.getDashboardData = async (userId, startDate, endDate, filterType) => {
   try {
     // 🔹 Fetch total wallet balance
     const walletBalance = await walletService.getUserWallet(userId);
-
     // 🔹 Fetch transactions within the given time range
-    const transactions = await transactionService.getTransactions({
+    let transactionFilter = { filterType };
+    console.log(transactionFilter);
+    const transactions = await transactionService.getTransactions(
       userId,
-      startDate,
-      endDate,
-    });
+      transactionFilter
+    );
 
     let totalIncome = 0;
     let totalExpenses = 0;
@@ -58,7 +58,7 @@ exports.getDashboardData = async (userId, startDate, endDate) => {
       .map(([category, amount]) => ({ category, amount }));
 
     // 🔹 Get recent 5 transactions
-    const recentTransactions = transactions.documents.slice(0, 5);
+    const recentTransactions = transactions.documents.slice(0, 3);
 
     return {
       walletBalance: walletBalance.totalBalance,

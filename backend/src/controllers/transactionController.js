@@ -19,7 +19,12 @@ exports.addTransaction = catchAsync(async (req, res, next) => {
 });
 
 exports.getTransactions = catchAsync(async (req, res, next) => {
-  const transactions = await transactionService.getTransactions(req.query);
+  const { userId } = req.params;
+
+  const transactions = await transactionService.getTransactions(
+    userId,
+    req.query
+  );
 
   res.status(200).json({
     status: "success",

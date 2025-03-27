@@ -32,7 +32,7 @@ import { AddTransactionDialog } from "../components/AddTransactionDialog";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/Dashboard/tabs";
 import { IncomeExpenseChart } from "../components/IncomeExpenseChart";
 
-export function DashboardContent() {
+export default function DashboardContent() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [timeframe, setTimeframe] = useState("monthly");
   const [dashboardData, setDashboardData] = useState(null);
@@ -49,6 +49,7 @@ export function DashboardContent() {
         if (!response.ok) {
           throw new Error("Failed to fetch dashboard data");
         }
+        console.log(response.data);
         const result = await response.json();
         if (result.status === "success") {
           setDashboardData(result.data);
@@ -337,5 +338,3 @@ export function DashboardContent() {
     </div>
   );
 }
-
-export default DashboardContent;

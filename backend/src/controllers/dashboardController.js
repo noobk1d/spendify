@@ -4,8 +4,8 @@ const AppError = require("../utils/appError");
 
 exports.getDashboardData = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
-  let { filterType } = req.query;
 
+  let { filterType } = req.query;
   const today = new Date();
   let startDate, endDate;
 
@@ -27,9 +27,9 @@ exports.getDashboardData = catchAsync(async (req, res, next) => {
   const dashboardData = await dashboardService.getDashboardData(
     userId,
     startDate,
-    endDate
+    endDate,
+    filterType
   );
-
   res.status(200).json({
     status: "success",
     data: dashboardData,

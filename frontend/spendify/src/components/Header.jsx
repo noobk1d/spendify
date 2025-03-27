@@ -7,7 +7,7 @@ function Header() {
         <img
           src="/Spendify-removebg-preview.png"
           alt="Spendify Logo"
-          className="h-12 w-auto"
+          className="h-16 md:h-20 w-auto transition-transform hover:scale-105"
         />
       </div>
       <div className="flex items-center gap-4">

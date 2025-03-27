@@ -1,55 +1,65 @@
 "use client";
 
 import React from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export function IncomeExpenseChart({ data }) {
   if (!data || data.length === 0) {
     return null;
   }
 
-  // Transform the data into arrays for the chart
-  const dates = Object.keys(data || {}).map((date) =>
-    new Date(date).toLocaleDateString("en-US", {
+  // Transform the data into the format Recharts expects
+  const chartData = Object.entries(data).map(([date, values]) => ({
+    date: new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-    })
-  );
-  const incomeData = Object.values(data || {}).map(
-    (values) => values.income || 0
-  );
-  const expenseData = Object.values(data || {}).map(
-    (values) => values.expense || 0
-  );
+    }),
+    income: values.income || 0,
+    expense: values.expense || 0,
+  }));
 
-  // Calculate min and max values for scaling
-  const minValue = Math.min(...incomeData, ...expenseData) * 0.96;
-  const maxValue = Math.max(...incomeData, ...expenseData) * 1.02;
+  // Custom tooltip content
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100">
+          <p className="text-sm font-medium text-slate-600 mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  entry.name === "income" ? "bg-purple-500" : "bg-blue-500"
+                }`}
+              />
+              <span className="text-sm text-slate-600 capitalize">
+                {entry.name}:
+              </span>
+              <span className="text-sm font-medium text-slate-700">
+                ${entry.value.toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
-  // Function to calculate Y position with more space at bottom
-  const getPointY = (value) =>
-    85 - ((value - minValue) / (maxValue - minValue)) * 65;
-
-  // Function to generate line path
-  const generateLinePath = (data) =>
-    data
-      .map((value, index) => {
-        const x = (index * 80) / (data.length - 1) + 15;
-        const y = getPointY(value);
-        return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-      })
-      .join(" ");
-
-  // Generate Y-axis labels
-  const yAxisLabels = [];
-  const numLabels = 5;
-  for (let i = 0; i < numLabels; i++) {
-    const value = minValue + ((maxValue - minValue) * i) / (numLabels - 1);
-    yAxisLabels.push(value);
-  }
+  // Calculate totals
+  const totalIncome = chartData.reduce((sum, item) => sum + item.income, 0);
+  const totalExpense = chartData.reduce((sum, item) => sum + item.expense, 0);
 
   return (
-    <div className="relative h-full">
-      <div className="flex justify-center gap-8 mb-4">
+    <div className="relative h-full flex flex-col">
+      <div className="flex justify-center gap-8 mb-2">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-purple-500"></div>
           <span className="text-sm text-gray-600">Income</span>
@@ -61,106 +71,106 @@ export function IncomeExpenseChart({ data }) {
       </div>
 
       {/* Chart */}
-      <div className="relative w-full md:w-[85%] lg:w-[75%] mx-auto h-[150px] md:h-[170px] lg:h-[190px]">
-        {/* Y-axis Labels */}
-        <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-[10px] text-slate-500">
-          {yAxisLabels.map((value, index) => (
-            <div key={index} className="transform -translate-y-1/2">
-              ${value.toFixed(0)}
-            </div>
-          ))}
-        </div>
-
-        <svg
-          viewBox="0 0 100 100"
-          className="w-full h-full"
-          preserveAspectRatio="none">
-          {/* Grid Lines */}
-          {yAxisLabels.map((_, index) => {
-            const y = 85 - (index * 65) / (numLabels - 1);
-            return (
-              <line
-                key={`grid-${index}`}
-                x1="15"
-                y1={y}
-                x2="95"
-                y2={y}
-                stroke="#e2e8f0"
-                strokeWidth="0.5"
-                className="opacity-50"
-              />
-            );
-          })}
-
-          {/* Income & Expense Paths */}
-          <path
-            d={generateLinePath(incomeData)}
-            fill="none"
-            stroke="#a855f7"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="animate-draw-line"
-          />
-          <path
-            d={generateLinePath(expenseData)}
-            fill="none"
-            stroke="#60a5fa"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="animate-draw-line"
-          />
-
-          {/* Income & Expense Dots */}
-          {[incomeData, expenseData].map((data, dataIndex) =>
-            data.map((value, index) => {
-              const x = (index * 80) / (data.length - 1) + 15;
-              const y = getPointY(value);
-              return (
-                <circle
-                  key={`${dataIndex}-${index}`}
-                  cx={x}
-                  cy={y}
-                  r="3"
-                  fill={dataIndex === 0 ? "#a855f7" : "#60a5fa"}
-                  stroke="white"
-                  strokeWidth="1.5"
-                  className="animate-pulse"
-                />
-              );
-            })
-          )}
-        </svg>
-
-        {/* X-Axis Labels */}
-        <div className="absolute bottom-0 left-[15%] right-0 flex justify-between text-[10px] text-slate-500 mt-2">
-          {dates.map((date) => (
-            <div key={date} className="transform -translate-x-1/2">
-              {date}
-            </div>
-          ))}
-        </div>
+      <div className="relative w-full md:w-[95%] lg:w-[90%] mx-auto h-[110px] md:h-[130px] lg:h-[150px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#f1f5f9"
+            />
+            <XAxis
+              dataKey="date"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fill: "#64748b" }}
+              dy={10}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fill: "#64748b" }}
+              tickFormatter={(value) => `$${value}`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="income"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{
+                r: 6,
+                fill: "#8b5cf6",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+              fillOpacity={1}
+              fill="url(#incomeGradient)"
+            />
+            <Line
+              type="monotone"
+              dataKey="expense"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{
+                r: 6,
+                fill: "#3b82f6",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+              fillOpacity={1}
+              fill="url(#expenseGradient)"
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* Summary Section - Slightly Bigger Cards */}
-      <div className="flex justify-center gap-6 mt-4 px-2">
-        <div className="flex-1 max-w-[180px] bg-white p-3 rounded-lg border border-slate-100 text-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">Total Income</span>
-            <span className="text-sm text-green-600">+12%</span>
+      {/* Summary Section - Enhanced Cards */}
+      <div className="flex justify-center gap-8 mt-6 px-4">
+        <div className="flex-1 max-w-[200px] bg-white p-4 rounded-xl border border-slate-100 text-center shadow-sm hover:shadow-lg transition-all duration-300 hover:border-purple-100 group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <span className="text-sm font-medium text-slate-600">
+                Total Income
+              </span>
+            </div>
+            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+              +12%
+            </span>
           </div>
-          <p className="text-base font-semibold text-slate-800 mt-2">
-            ${incomeData.reduce((a, b) => a + b, 0).toFixed(2)}
+          <p className="text-xl font-semibold text-slate-800 mt-2 group-hover:text-purple-600 transition-colors">
+            ${totalIncome.toFixed(2)}
           </p>
         </div>
-        <div className="flex-1 max-w-[180px] bg-white p-3 rounded-lg border border-slate-100 text-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">Total Expense</span>
-            <span className="text-sm text-red-600">+8%</span>
+        <div className="flex-1 max-w-[200px] bg-white p-4 rounded-xl border border-slate-100 text-center shadow-sm hover:shadow-lg transition-all duration-300 hover:border-blue-100 group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span className="text-sm font-medium text-slate-600">
+                Total Expense
+              </span>
+            </div>
+            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+              +8%
+            </span>
           </div>
-          <p className="text-base font-semibold text-slate-800 mt-2">
-            ${expenseData.reduce((a, b) => a + b, 0).toFixed(2)}
+          <p className="text-xl font-semibold text-slate-800 mt-2 group-hover:text-blue-600 transition-colors">
+            ${totalExpense.toFixed(2)}
           </p>
         </div>
       </div>
