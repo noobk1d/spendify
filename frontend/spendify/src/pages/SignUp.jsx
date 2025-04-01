@@ -107,7 +107,7 @@ export default function SignUp(props) {
       setIsLoading(true);
       await account.createOAuth2Session(
         OAuthProvider.Google,
-        `${window.location.origin}/wallet-setup`,
+        `${window.location.origin}/wallet`,
         `${window.location.origin}/signup`
       );
     } catch (error) {

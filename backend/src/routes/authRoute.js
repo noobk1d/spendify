@@ -7,8 +7,8 @@ app.use(express.json());
 
 const router = express.Router();
 
-//Auth
+//Aut
 router.post("/signup", authController.signUp);
-router.post("/auth/login", authController.login, authController.generateJWT);
+router.post("/login", authController.login);
 
 module.exports = router;

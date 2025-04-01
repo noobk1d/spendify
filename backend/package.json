@@ -17,6 +17,7 @@
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "moment-timezone": "^0.5.47",
     "morgan": "^1.10.0",
     "node-appwrite": "^15.0.0",

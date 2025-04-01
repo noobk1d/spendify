@@ -28,41 +28,53 @@ import {
 } from "../components/ui/Dashboard/avatar";
 import { Input } from "../components/ui/Dashboard/input";
 import { Progress } from "../components/ui/Dashboard/progress";
-import { AddTransactionDialog } from "../components/AddTransactionDialog";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/Dashboard/tabs";
 import { IncomeExpenseChart } from "../components/IncomeExpenseChart";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/Dashboard/dialog";
+import TransactionForm from "../components/TransactionManagement/TransactionForm";
+import TransactionStatusAnimation from "../components/TransactionStatusAnimation";
 
 export default function DashboardContent() {
-  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showStatusAnimation, setShowStatusAnimation] = useState(false);
+  const [statusAnimation, setStatusAnimation] = useState({
+    status: "",
+    message: "",
+  });
   const [timeframe, setTimeframe] = useState("monthly");
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `http://127.0.0.1:3000/spendify/api/dashboard/67cf12a40004818c2916?filterType=${timeframe}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-        console.log(response.data);
-        const result = await response.json();
-        if (result.status === "success") {
-          setDashboardData(result.data);
-        } else {
-          setError("Failed to fetch dashboard data");
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `http://127.0.0.1:3000/spendify/api/dashboard/67cf12a40004818c2916?filterType=${timeframe}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard data");
       }
-    };
+      const result = await response.json();
+      if (result.status === "success") {
+        setDashboardData(result.data);
+      } else {
+        setError("Failed to fetch dashboard data");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDashboardData();
   }, [timeframe]);
 
@@ -80,6 +92,78 @@ export default function DashboardContent() {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const handleAddTransaction = async (transactionData) => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Number(transactionData.amount),
+            type: transactionData.type,
+            paymentMethod: transactionData.paymentMethod.toLowerCase(),
+            category: transactionData.category.toLowerCase(),
+            note: transactionData.description,
+            date: transactionData.date,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show success animation first
+        setStatusAnimation({
+          status: "success",
+          message: data.message || "Transaction added successfully!",
+        });
+        setShowStatusAnimation(true);
+
+        // Wait for animation to be visible before proceeding
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Close modal
+        setShowAddTransaction(false);
+
+        // Refresh dashboard data
+        await fetchDashboardData();
+
+        // Hide animation after 3 seconds
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      } else {
+        // Show error animation
+        setStatusAnimation({
+          status: "error",
+          message:
+            data.message || "Failed to add transaction. Please try again.",
+        });
+        setShowStatusAnimation(true);
+
+        // Hide animation after 3 seconds
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      }
+    } catch (error) {
+      // Show error animation
+      setStatusAnimation({
+        status: "error",
+        message: "An error occurred. Please try again.",
+      });
+      setShowStatusAnimation(true);
+
+      // Hide animation after 3 seconds
+      setTimeout(() => {
+        setShowStatusAnimation(false);
+      }, 3000);
+    }
   };
 
   if (loading) {
@@ -117,7 +201,7 @@ export default function DashboardContent() {
               </TabsList>
             </Tabs>
             <Button
-              onClick={() => setIsAddTransactionOpen(true)}
+              onClick={() => setShowAddTransaction(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction
@@ -321,7 +405,7 @@ export default function DashboardContent() {
         {/* Quick Add Transaction Button (Mobile) */}
         <div className="fixed bottom-4 right-4 md:hidden">
           <Button
-            onClick={() => setIsAddTransactionOpen(true)}
+            onClick={() => setShowAddTransaction(true)}
             size="icon"
             className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-purple-600 hover:bg-purple-700 shadow-lg">
             <Plus className="w-5 h-5 md:w-6 md:h-6" />
@@ -331,9 +415,40 @@ export default function DashboardContent() {
       </main>
 
       {/* Add Transaction Dialog */}
-      <AddTransactionDialog
-        open={isAddTransactionOpen}
-        onOpenChange={setIsAddTransactionOpen}
+      <Dialog open={showAddTransaction} onOpenChange={setShowAddTransaction}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Transaction</DialogTitle>
+            <DialogDescription>
+              Enter the details of your transaction below.
+            </DialogDescription>
+          </DialogHeader>
+          <TransactionForm
+            onSubmit={handleAddTransaction}
+            categories={[
+              "shopping",
+              "groceries",
+              "entertainment",
+              "bills",
+              "transportation",
+              "health",
+              "education",
+              "salary",
+              "freelance",
+              "investments",
+              "gifts",
+              "other",
+            ]}
+            paymentMethods={["cash", "bank", "credit"]}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Animation */}
+      <TransactionStatusAnimation
+        status={statusAnimation.status}
+        message={statusAnimation.message}
+        isVisible={showStatusAnimation}
       />
     </div>
   );

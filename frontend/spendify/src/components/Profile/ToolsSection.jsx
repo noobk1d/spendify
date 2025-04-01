@@ -30,6 +30,7 @@ const EXCHANGE_RATES = {
   CAD: 1.35,
   AUD: 1.52,
   CNY: 7.2,
+  INR: 83.12,
 };
 
 function ToolsSection() {
@@ -80,173 +81,151 @@ function ToolsSection() {
         <CardDescription>Helpful tools for your finances</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="currency" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="currency" className="flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" /> Currency Converter
-            </TabsTrigger>
-            <TabsTrigger value="calculator" className="flex items-center gap-2">
-              <Calculator className="h-4 w-4" /> Loan Calculator
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={amount || ""}
+                  onChange={(e) => {
+                    setAmount(Number.parseFloat(e.target.value) || 0);
+                    setConvertedAmount(null);
+                  }}
+                  min="0"
+                  step="0.01"
+                  className="text-lg"
+                />
+              </div>
 
-          <TabsContent value="currency" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+              <div className="grid grid-cols-[1fr,auto,1fr] gap-2 items-end">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={amount || ""}
-                    onChange={(e) => {
-                      setAmount(Number.parseFloat(e.target.value) || 0);
+                  <Label htmlFor="from-currency">From</Label>
+                  <Select
+                    value={fromCurrency}
+                    onValueChange={(value) => {
+                      setFromCurrency(value);
                       setConvertedAmount(null);
-                    }}
-                    min="0"
-                    step="0.01"
-                    className="text-lg"
-                  />
+                    }}>
+                    <SelectTrigger id="from-currency">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(EXCHANGE_RATES).map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="grid grid-cols-[1fr,auto,1fr] gap-2 items-end">
-                  <div className="space-y-2">
-                    <Label htmlFor="from-currency">From</Label>
-                    <Select
-                      value={fromCurrency}
-                      onValueChange={(value) => {
-                        setFromCurrency(value);
-                        setConvertedAmount(null);
-                      }}>
-                      <SelectTrigger id="from-currency">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(EXCHANGE_RATES).map((currency) => (
-                          <SelectItem key={currency} value={currency}>
-                            {currency}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSwapCurrencies}
-                    className="mb-0.5">
-                    <ArrowRightLeft className="h-4 w-4" />
-                  </Button>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="to-currency">To</Label>
-                    <Select
-                      value={toCurrency}
-                      onValueChange={(value) => {
-                        setToCurrency(value);
-                        setConvertedAmount(null);
-                      }}>
-                      <SelectTrigger id="to-currency">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(EXCHANGE_RATES).map((currency) => (
-                          <SelectItem key={currency} value={currency}>
-                            {currency}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Button onClick={handleConvert} className="w-full">
-                  Convert
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSwapCurrencies}
+                  className="mb-0.5">
+                  <ArrowRightLeft className="h-4 w-4" />
                 </Button>
 
-                {convertedAmount !== null && (
-                  <div className="mt-4 p-4 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">Result:</p>
-                    <p className="text-2xl font-semibold">
-                      {amount.toFixed(2)} {fromCurrency} ={" "}
-                      {convertedAmount.toFixed(2)} {toCurrency}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Exchange rate: 1 {fromCurrency} ={" "}
-                      {(
-                        EXCHANGE_RATES[toCurrency] /
-                        EXCHANGE_RATES[fromCurrency]
-                      ).toFixed(4)}{" "}
-                      {toCurrency}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Recent Conversions</h3>
-                  {conversionHistory.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConversionHistory([])}
-                      className="h-8 px-2 text-xs">
-                      Clear History
-                    </Button>
-                  )}
+                <div className="space-y-2">
+                  <Label htmlFor="to-currency">To</Label>
+                  <Select
+                    value={toCurrency}
+                    onValueChange={(value) => {
+                      setToCurrency(value);
+                      setConvertedAmount(null);
+                    }}>
+                    <SelectTrigger id="to-currency">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(EXCHANGE_RATES).map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
 
-                {conversionHistory.length > 0 ? (
-                  <div className="space-y-2">
-                    {conversionHistory.map((item, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border rounded-md flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">
-                            {item.amount.toFixed(2)} {item.from} →{" "}
-                            {item.result.toFixed(2)} {item.to}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.date.toLocaleString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            setAmount(item.amount);
-                            setFromCurrency(item.from);
-                            setToCurrency(item.to);
-                            setConvertedAmount(item.result);
-                          }}>
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-40 border rounded-md bg-muted/30">
-                    <p className="text-muted-foreground">
-                      No recent conversions
-                    </p>
-                  </div>
+              <Button onClick={handleConvert} className="w-full">
+                Convert
+              </Button>
+
+              {convertedAmount !== null && (
+                <div className="mt-4 p-4 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">Result:</p>
+                  <p className="text-2xl font-semibold">
+                    {amount.toFixed(2)} {fromCurrency} ={" "}
+                    {convertedAmount.toFixed(2)} {toCurrency}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Exchange rate: 1 {fromCurrency} ={" "}
+                    {(
+                      EXCHANGE_RATES[toCurrency] / EXCHANGE_RATES[fromCurrency]
+                    ).toFixed(4)}{" "}
+                    {toCurrency}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Recent Conversions</h3>
+                {conversionHistory.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConversionHistory([])}
+                    className="h-8 px-2 text-xs">
+                    Clear History
+                  </Button>
                 )}
               </div>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="calculator">
-            <div className="p-8 flex items-center justify-center">
-              <p className="text-muted-foreground">
-                Loan calculator coming soon...
-              </p>
+              {conversionHistory.length > 0 ? (
+                <div className="space-y-2">
+                  {conversionHistory.map((item, index) => (
+                    <div
+                      key={index}
+                      className="p-3 border rounded-md flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">
+                          {item.amount.toFixed(2)} {item.from} →{" "}
+                          {item.result.toFixed(2)} {item.to}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.date.toLocaleString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setAmount(item.amount);
+                          setFromCurrency(item.from);
+                          setToCurrency(item.to);
+                          setConvertedAmount(item.result);
+                        }}>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-40 border rounded-md bg-muted/30">
+                  <p className="text-muted-foreground">No recent conversions</p>
+                </div>
+              )}
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

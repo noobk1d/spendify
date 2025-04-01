@@ -21,6 +21,8 @@ exports.getUserProfile = async (userId) => {
     return {
       name: userProfile.name,
       email: userProfile.email,
+      phone: userProfile.phone,
+      location: userProfile.location,
       //   walletAllocation: userProfile.walletAllocation || [],
       //   categories: userProfile.categories || [],
       //   bills: userProfile.bills || [],

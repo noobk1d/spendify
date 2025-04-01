@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit2, Check, CreditCard, Wallet, Building } from "lucide-react";
 import { Button } from "../components/ui/Profile/button";
 import {
@@ -25,17 +25,37 @@ import ToolsSection from "../components/Profile/ToolsSection";
 function ProfileDashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [walletDistribution, setWalletDistribution] = useState({
-    cash: 280.5,
-    bank: 850.0,
-    creditCard: 150.0,
+    cash: 0,
+    bank: 0,
+    creditCard: 0,
   });
-
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [editValues, setEditValues] = useState({ ...walletDistribution });
 
-  const totalBalance =
-    walletDistribution.cash +
-    walletDistribution.bank +
-    walletDistribution.creditCard;
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:3000/spendify/api/wallet/67cf12a40004818c2916"
+        );
+        const data = await response.json();
+
+        // Parse the allocations string into an object
+        const allocations = JSON.parse(data.allocations);
+
+        setWalletDistribution(allocations);
+        setEditValues(allocations);
+        setTotalBalance(data.totalBalance);
+      } catch (error) {
+        console.error("Error fetching wallet data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWalletData();
+  }, []);
 
   const handleEditChange = (key, value) => {
     setEditValues({
@@ -44,15 +64,57 @@ function ProfileDashboard() {
     });
   };
 
-  const handleSaveEdit = () => {
-    setWalletDistribution({ ...editValues });
-    setIsEditing(false);
+  const handleSaveEdit = async () => {
+    try {
+      // First update the UI
+      setWalletDistribution({ ...editValues });
+      setIsEditing(false);
+
+      // Then send the API request
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/wallet/67cf12a40004818c2916",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            allocations: JSON.stringify(editValues),
+            totalBalance: Object.values(editValues).reduce((a, b) => a + b, 0),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update wallet data");
+      }
+
+      // Refresh the wallet data to ensure we have the latest state
+      const data = await response.json();
+      const allocations = JSON.parse(data.allocations);
+      setWalletDistribution(allocations);
+      setEditValues(allocations);
+      setTotalBalance(data.totalBalance);
+    } catch (error) {
+      console.error("Error updating wallet data:", error);
+      // Revert the UI changes if the API call fails
+      setWalletDistribution({ ...walletDistribution });
+      setEditValues({ ...walletDistribution });
+    }
   };
 
   const handleCancelEdit = () => {
     setEditValues({ ...walletDistribution });
     setIsEditing(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">

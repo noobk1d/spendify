@@ -52,6 +52,7 @@ import RecurringTransactionForm from "../components/TransactionManagement/Recurr
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { formatCurrency } from "../lib/utils";
+import TransactionStatusAnimation from "../components/TransactionStatusAnimation";
 
 // Mock data for recurring transactions
 const mockRecurringTransactions = [
@@ -131,6 +132,13 @@ export default function TransactionsPage() {
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [newRecurringOpen, setNewRecurringOpen] = useState(false);
   const [editRecurringId, setEditRecurringId] = useState(null);
+
+  // State for status animation
+  const [showStatusAnimation, setShowStatusAnimation] = useState(false);
+  const [statusAnimation, setStatusAnimation] = useState({
+    status: "",
+    message: "",
+  });
 
   // Load data with API call
   useEffect(() => {
@@ -302,6 +310,84 @@ export default function TransactionsPage() {
       return `Showing transactions for ${format(selectedDate, "MMM d, yyyy")}`;
     }
     return "";
+  };
+
+  const handleAddTransaction = async (transactionData) => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Number(transactionData.amount),
+            type: transactionData.type,
+            paymentMethod: transactionData.paymentMethod.toLowerCase(),
+            category: transactionData.category.toLowerCase(),
+            note: transactionData.description,
+            date: transactionData.date,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show success animation first
+        setStatusAnimation({
+          status: "success",
+          message: data.message || "Transaction added successfully!",
+        });
+        setShowStatusAnimation(true);
+
+        // Wait for animation to be visible before proceeding
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Close modal
+        setNewTransactionOpen(false);
+
+        // Refresh transactions list
+        const refreshResponse = await fetch(
+          `http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916?filterType=${dateFilterType}`
+        );
+        const refreshData = await refreshResponse.json();
+        if (refreshData.status === "success") {
+          setTransactions(refreshData.data);
+        }
+
+        // Hide animation after 3 seconds
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      } else {
+        // Show error animation
+        setStatusAnimation({
+          status: "error",
+          message:
+            data.message || "Failed to add transaction. Please try again.",
+        });
+        setShowStatusAnimation(true);
+
+        // Hide animation after 3 seconds
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      }
+    } catch (error) {
+      // Show error animation
+      setStatusAnimation({
+        status: "error",
+        message: "An error occurred. Please try again.",
+      });
+      setShowStatusAnimation(true);
+
+      // Hide animation after 3 seconds
+      setTimeout(() => {
+        setShowStatusAnimation(false);
+      }, 3000);
+    }
   };
 
   return (
@@ -742,11 +828,7 @@ export default function TransactionsPage() {
             </DialogDescription>
           </DialogHeader>
           <TransactionForm
-            onSubmit={(data) => {
-              // In a real app, you would save this data
-              console.log("New transaction:", data);
-              setNewTransactionOpen(false);
-            }}
+            onSubmit={handleAddTransaction}
             categories={categories.filter((c) => c !== "All Categories")}
             paymentMethods={paymentMethods.filter((m) => m !== "All Methods")}
           />
@@ -784,6 +866,13 @@ export default function TransactionsPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Status Animation */}
+      <TransactionStatusAnimation
+        status={statusAnimation.status}
+        message={statusAnimation.message}
+        isVisible={showStatusAnimation}
+      />
     </div>
   );
 }

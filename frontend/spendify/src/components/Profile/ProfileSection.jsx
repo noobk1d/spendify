@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -17,15 +17,55 @@ import { Separator } from "../ui/Profile/separator";
 
 function ProfileSection() {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: "Gillian P.",
-    email: "gillian.p@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, USA",
+    name: "Loading...",
+    email: "Loading...",
+    phone: "Loading...",
+    location: "Loading...",
     avatar: "/placeholder.svg?height=100&width=100",
   });
 
   const [formData, setFormData] = useState({ ...profile });
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:3000/spendify/api/profile/me/67cf12a40004818c2916"
+        );
+        const data = await response.json();
+
+        // Update both profile and formData with the API response
+        const updatedProfile = {
+          ...profile,
+          name: data.name || "Not specified",
+          email: data.email || "Not specified",
+          phone: data.phone || "Not specified",
+          location: data.location || "Not specified",
+        };
+
+        setProfile(updatedProfile);
+        setFormData(updatedProfile);
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+        // Set default values in case of error
+        const errorProfile = {
+          ...profile,
+          name: "Error loading profile",
+          email: "Error loading profile",
+          phone: "Error loading profile",
+          location: "Error loading profile",
+        };
+        setProfile(errorProfile);
+        setFormData(errorProfile);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,11 +75,64 @@ function ProfileSection() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setProfile({ ...formData });
+  const handleSave = async () => {
+    try {
+      // Send PATCH request to update profile
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/profile/me/67cf12a40004818c2916",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            location:
+              formData.location === "Not specified" ? null : formData.location,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log(data);
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update profile");
+      }
+
+      // Update local state with the response data
+      const updatedProfile = {
+        ...profile,
+        name: data.profile.name,
+        email: data.profile.email,
+        phone: data.profile.phone,
+        location: data.profile.location || "Not specified",
+      };
+
+      setProfile(updatedProfile);
+      setFormData(updatedProfile);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({ ...profile });
     setIsEditing(false);
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -51,7 +144,7 @@ function ProfileSection() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={isEditing ? handleSave : () => setIsEditing(true)}
           className="flex items-center gap-1">
           {isEditing ? (
             <>
@@ -72,9 +165,11 @@ function ProfileSection() {
                 <AvatarImage src={profile.avatar} alt={profile.name} />
                 <AvatarFallback className="text-3xl">
                   {profile.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                    ? profile.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                    : "U"}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
@@ -93,7 +188,7 @@ function ProfileSection() {
 
           <Separator className="md:hidden my-4" />
 
-          <form className="flex-1 space-y-4" onSubmit={handleSubmit}>
+          <div className="flex-1 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -165,16 +260,15 @@ function ProfileSection() {
 
             {isEditing && (
               <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}>
+                <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+                <Button type="button" onClick={handleSave}>
+                  Save Changes
+                </Button>
               </div>
             )}
-          </form>
+          </div>
         </div>
       </CardContent>
     </Card>

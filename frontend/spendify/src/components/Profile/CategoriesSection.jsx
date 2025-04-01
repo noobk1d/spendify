@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -22,41 +22,91 @@ import { Badge } from "../ui/Profile/badge";
 import { Plus, X, Tag } from "lucide-react";
 
 function CategoriesSection() {
-  const [categories, setCategories] = useState([
-    "New Users",
-    "Online Sales",
-    "Daily Sales",
-    "Digital Product",
-    "Physical Product",
-  ]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [categoryType, setCategoryType] = useState("expense");
   const [isAdding, setIsAdding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleAddCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
-      setCategories([...categories, newCategory.trim()]);
-      setNewCategory("");
-      setIsAdding(false);
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/categories/67cf12a40004818c2916"
+      );
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRemoveCategory = (category) => {
-    setCategories(categories.filter((c) => c !== category));
-    if (selectedCategory === category) {
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleAddCategory = async () => {
+    if (newCategory.trim()) {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:3000/spendify/api/categories/67cf12a40004818c2916",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: newCategory.trim(),
+              type: categoryType,
+            }),
+          }
+        );
+        await response.json();
+        // Fetch updated categories after adding new one
+        fetchCategories();
+        setNewCategory("");
+        setCategoryType("expense");
+        setIsAdding(false);
+      } catch (error) {
+        console.error("Error adding category:", error);
+      }
+    }
+  };
+
+  const handleRemoveCategory = (categoryId) => {
+    setCategories(categories.filter((c) => c.$id !== categoryId));
+    if (selectedCategory === categoryId) {
       setSelectedCategory("");
     }
   };
 
   // Generate random pastel colors for categories
-  const getCategoryColor = (category) => {
-    const hash = category.split("").reduce((acc, char) => {
+  const getCategoryColor = (categoryName) => {
+    const hash = categoryName.split("").reduce((acc, char) => {
       return char.charCodeAt(0) + ((acc << 5) - acc);
     }, 0);
 
     const hue = hash % 360;
     return `hsl(${hue}, 70%, 80%)`;
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Categories</CardTitle>
+          <CardDescription>Loading categories...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-40">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -82,8 +132,8 @@ function CategoriesSection() {
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
+                <SelectItem key={category.$id} value={category.$id}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -91,27 +141,46 @@ function CategoriesSection() {
         </div>
 
         {isAdding && (
-          <div className="flex items-center gap-2 p-4 border rounded-md bg-muted/50">
-            <Tag className="h-4 w-4 text-muted-foreground" />
-            <Input
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="Enter new category"
-              className="flex-1"
-              autoFocus
-            />
-            <Button onClick={handleAddCategory} size="sm">
-              Add
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsAdding(false);
-                setNewCategory("");
-              }}>
-              Cancel
-            </Button>
+          <div className="space-y-4 p-4 border rounded-md bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Enter category name"
+                className="flex-1"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="type" className="w-16">
+                Type:
+              </Label>
+              <Select value={categoryType} onValueChange={setCategoryType}>
+                <SelectTrigger id="type" className="flex-1">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button onClick={handleAddCategory} size="sm">
+                Add
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewCategory("");
+                  setCategoryType("expense");
+                }}>
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
 
@@ -120,16 +189,16 @@ function CategoriesSection() {
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <Badge
-                key={category}
+                key={category.$id}
                 variant="outline"
                 className="flex items-center gap-1 py-1.5 px-3 text-sm"
                 style={{
-                  backgroundColor: getCategoryColor(category),
+                  backgroundColor: getCategoryColor(category.name),
                   color: "#000",
                 }}>
-                {category}
+                {category.name}
                 <button
-                  onClick={() => handleRemoveCategory(category)}
+                  onClick={() => handleRemoveCategory(category.$id)}
                   className="ml-1 text-gray-700 hover:text-gray-900 rounded-full hover:bg-gray-200 p-0.5">
                   <X className="h-3 w-3" />
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import {
   Card,
@@ -14,10 +14,80 @@ import { BudgetActualChart } from "../components/analytics/BudgetActualChart";
 import { SummaryCards } from "../components/analytics/SummaryCards";
 import { SpendingHeatmap } from "../components/analytics/SpendingHeatmap";
 import { DailyTrends } from "../components/analytics/DailyTrends";
-import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
 export default function AnalyticsPage() {
   const [timeframe, setTimeframe] = useState("monthly");
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(
+          `http://127.0.0.1:3000/spendify/api/reports/67cf12a40004818c2916?timeframe=${timeframe}`
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch analytics data: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setAnalyticsData(data.data.data);
+        } else {
+          throw new Error("Failed to fetch analytics data");
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching analytics:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [timeframe]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-24 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600">Error: {error}</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -30,8 +100,14 @@ export default function AnalyticsPage() {
             </h1>
             <Tabs
               defaultValue="monthly"
+              value={timeframe}
               className="w-full sm:w-[200px]"
-              onValueChange={setTimeframe}>
+              onValueChange={(value) => {
+                setTimeframe(value);
+                // Force a re-render of the components
+                setAnalyticsData(null);
+                setLoading(true);
+              }}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger
                   value="weekly"
@@ -50,7 +126,10 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Summary Cards Column */}
             <div className="lg:col-span-1 space-y-4">
-              <SummaryCards timeframe={timeframe} />
+              <SummaryCards
+                data={analyticsData?.summary}
+                timeframe={timeframe}
+              />
             </div>
 
             {/* Income vs Expense Chart */}
@@ -60,7 +139,10 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="h-[300px]">
-                  <IncomeExpenseChart timeframe={timeframe} />
+                  <IncomeExpenseChart
+                    data={analyticsData?.incomeExpense}
+                    timeframe={timeframe}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -72,7 +154,10 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="h-[250px]">
-                  <BudgetActualChart timeframe={timeframe} />
+                  <BudgetActualChart
+                    data={analyticsData?.budgetActual}
+                    timeframe={timeframe}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -84,7 +169,10 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="h-[250px]">
-                  <DailyTrends timeframe={timeframe} />
+                  <DailyTrends
+                    data={analyticsData?.dailyTrends}
+                    timeframe={timeframe}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -96,7 +184,10 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="h-[200px]">
-                  <SpendingHeatmap timeframe={timeframe} />
+                  <SpendingHeatmap
+                    data={analyticsData?.spendingHeatmap}
+                    timeframe={timeframe}
+                  />
                 </div>
               </CardContent>
             </Card>

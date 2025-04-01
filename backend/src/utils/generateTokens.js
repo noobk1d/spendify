@@ -1,32 +1,47 @@
-const axios = require("axios");
-const AppError = require("../utils/appError");
+const jwt = require("jsonwebtoken");
+const AppError = require("./appError");
 
-const verifyAppwriteJWT = async (req, res, next) => {
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+
+// Function to generate JWT token
+exports.generateToken = (userId) => {
   try {
-    // Get the token from the request header
-    const token = req.headers.authorization?.split(" ")[1]; // "Bearer <TOKEN>"
-
-    if (!token) {
-      throw new AppError("Authentication token is missing!", 401);
-    }
-
-    // ✅ Verify JWT with Appwrite
-    const response = await axios.get(
-      "https://cloud.appwrite.io/v1/account/sessions/jwt",
-      {
-        headers: {
-          "X-Appwrite-Project": process.env.APPWRITE_PROJECT_ID,
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    // ✅ If valid, attach user data to request
-    req.user = response.data;
-    next(); // Move to the next middleware/route handler
+    const token = jwt.sign({ id: userId }, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN,
+    });
+    return token;
   } catch (error) {
-    next(new AppError("Invalid or expired token!", 401));
+    throw new AppError("Error generating token", 500);
   }
 };
 
-module.exports = verifyAppwriteJWT;
+// Middleware to verify JWT token
+exports.verifyToken = (req, res, next) => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new AppError("No token provided", 401);
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Add user ID to request object
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error.name === "JsonWebTokenError") {
+      next(new AppError("Invalid token", 401));
+      return;
+    }
+    if (error.name === "TokenExpiredError") {
+      next(new AppError("Token expired", 401));
+      return;
+    }
+    next(error);
+  }
+};

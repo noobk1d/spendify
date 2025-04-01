@@ -11,16 +11,6 @@ import {
 } from "recharts";
 import { DollarSign } from "lucide-react";
 
-const totalBudget = 2900;
-const totalSpent = 2400;
-const remainingBudget = totalBudget - totalSpent;
-const spentPercentage = Math.round((totalSpent / totalBudget) * 100);
-
-const pieData = [
-  { name: "Spent", value: totalSpent },
-  { name: "Remaining", value: remainingBudget },
-];
-
 const COLORS = ["hsl(var(--primary))", "hsl(var(--muted))"];
 
 const CustomLabel = ({ viewBox, value1, value2 }) => {
@@ -45,8 +35,14 @@ const CustomLabel = ({ viewBox, value1, value2 }) => {
   );
 };
 
-export function BudgetPieChart() {
+export function BudgetPieChart({ totalBudget, totalSpent, remainingBudget, categories }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const spentPercentage = Math.round((totalSpent / totalBudget) * 100);
+
+  const pieData = [
+    { name: "Spent", value: totalSpent },
+    { name: "Remaining", value: remainingBudget },
+  ];
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);
@@ -98,12 +94,17 @@ export function BudgetPieChart() {
                 />
               </Pie>
               <Tooltip
-                formatter={(value) => [`$${value}`, undefined]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "none",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                  animation: "float 0.3s ease-out",
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white p-2 border rounded shadow">
+                        <p className="text-sm font-medium">
+                          {payload[0].name}: ${payload[0].value}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
                 }}
               />
             </PieChart>
