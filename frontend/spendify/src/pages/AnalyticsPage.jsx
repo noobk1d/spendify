@@ -26,8 +26,21 @@ export default function AnalyticsPage() {
       try {
         setLoading(true);
         setError(null);
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
         const response = await fetch(
-          `http://127.0.0.1:3000/spendify/api/reports/67cf12a40004818c2916?timeframe=${timeframe}`
+          `http://127.0.0.1:3000/spendify/api/reports?timeframe=${timeframe}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
         );
 
         if (!response.ok) {

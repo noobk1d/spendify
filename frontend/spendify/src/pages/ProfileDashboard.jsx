@@ -32,23 +32,60 @@ function ProfileDashboard() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [editValues, setEditValues] = useState({ ...walletDistribution });
+  const [showStatusAnimation, setShowStatusAnimation] = useState(false);
+  const [statusAnimation, setStatusAnimation] = useState({
+    status: "success",
+    message: "",
+  });
 
   useEffect(() => {
     const fetchWalletData = async () => {
       try {
+        setIsLoading(true);
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
         const response = await fetch(
-          "http://127.0.0.1:3000/spendify/api/wallet/67cf12a40004818c2916"
+          "http://127.0.0.1:3000/spendify/api/wallet",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+              Accept: "application/json",
+              Origin: window.location.origin,
+            },
+            mode: "cors",
+            credentials: "include",
+          }
         );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch wallet data");
+        }
+
         const data = await response.json();
-
-        // Parse the allocations string into an object
-        const allocations = JSON.parse(data.allocations);
-
-        setWalletDistribution(allocations);
-        setEditValues(allocations);
-        setTotalBalance(data.totalBalance);
+        if (data.status === "success") {
+          // Parse the allocations string to JSON
+          const parsedAllocations = JSON.parse(data.data.allocations);
+          setWalletDistribution(parsedAllocations);
+          setEditValues(parsedAllocations);
+          setTotalBalance(data.data.totalBalance);
+        }
       } catch (error) {
         console.error("Error fetching wallet data:", error);
+        setShowStatusAnimation(true);
+        setStatusAnimation({
+          status: "error",
+          message: "Failed to fetch wallet data. Please try again.",
+        });
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
       } finally {
         setIsLoading(false);
       }
@@ -66,22 +103,28 @@ function ProfileDashboard() {
 
   const handleSaveEdit = async () => {
     try {
-      // First update the UI
-      setWalletDistribution({ ...editValues });
-      setIsEditing(false);
+      setIsLoading(true);
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
-      // Then send the API request
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/wallet/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/wallet",
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+            Accept: "application/json",
+            Origin: window.location.origin,
           },
-          body: JSON.stringify({
-            allocations: JSON.stringify(editValues),
-            totalBalance: Object.values(editValues).reduce((a, b) => a + b, 0),
-          }),
+          mode: "cors",
+          credentials: "include",
+          body: JSON.stringify(editValues),
         }
       );
 
@@ -89,17 +132,37 @@ function ProfileDashboard() {
         throw new Error("Failed to update wallet data");
       }
 
-      // Refresh the wallet data to ensure we have the latest state
       const data = await response.json();
-      const allocations = JSON.parse(data.allocations);
-      setWalletDistribution(allocations);
-      setEditValues(allocations);
-      setTotalBalance(data.totalBalance);
+      if (data.status === "success") {
+        // Parse the allocations string to JSON
+        const parsedAllocations = JSON.parse(data.data.allocations);
+        setWalletDistribution(parsedAllocations);
+        setEditValues(parsedAllocations);
+        setTotalBalance(data.data.totalBalance);
+        setShowStatusAnimation(true);
+        setStatusAnimation({
+          status: "success",
+          message: "Wallet updated successfully!",
+        });
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      }
     } catch (error) {
       console.error("Error updating wallet data:", error);
-      // Revert the UI changes if the API call fails
       setWalletDistribution({ ...walletDistribution });
       setEditValues({ ...walletDistribution });
+      setShowStatusAnimation(true);
+      setStatusAnimation({
+        status: "error",
+        message: "Failed to update wallet. Please try again.",
+      });
+      setTimeout(() => {
+        setShowStatusAnimation(false);
+      }, 3000);
+    } finally {
+      setIsLoading(false);
+      setIsEditing(false);
     }
   };
 
@@ -299,6 +362,25 @@ function ProfileDashboard() {
           </Tabs>
         </div>
       </main>
+      {showStatusAnimation && (
+        <div className="fixed bottom-0 left-0 right-0 p-4">
+          <div
+            className={`p-4 rounded-lg ${
+              statusAnimation.status === "success"
+                ? "bg-green-100"
+                : "bg-red-100"
+            }`}>
+            <p
+              className={`text-sm ${
+                statusAnimation.status === "success"
+                  ? "text-green-500"
+                  : "text-red-500"
+              }`}>
+              {statusAnimation.message}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

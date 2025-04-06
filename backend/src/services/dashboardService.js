@@ -7,11 +7,15 @@ exports.getDashboardData = async (userId, startDate, endDate, filterType) => {
     const walletBalance = await walletService.getUserWallet(userId);
     // 🔹 Fetch transactions within the given time range
     let transactionFilter = { filterType };
-    console.log(transactionFilter);
+    // console.log(transactionFilter);
     const transactions = await transactionService.getTransactions(
       userId,
       transactionFilter
     );
+
+    // const data = transactions.documents;
+    // const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // console.log(sortedData);
 
     let totalIncome = 0;
     let totalExpenses = 0;
@@ -57,7 +61,7 @@ exports.getDashboardData = async (userId, startDate, endDate, filterType) => {
       .slice(0, 3)
       .map(([category, amount]) => ({ category, amount }));
 
-    // 🔹 Get recent 5 transactions
+    // 🔹 Get recent 3 transactions
     const recentTransactions = transactions.documents.slice(0, 3);
 
     return {

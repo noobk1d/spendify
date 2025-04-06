@@ -4,7 +4,7 @@ const budgetService = require("../services/budgetService");
 
 // ✅ Get both total budget and category budgets
 exports.getBudget = catchAsync(async (req, res, next) => {
-  const { userId } = req.params; // Extract userId from auth
+  const userId = req.user; // Extract userId from auth
 
   const budgets = await budgetService.getBudget(userId);
 
@@ -16,7 +16,7 @@ exports.getBudget = catchAsync(async (req, res, next) => {
 
 // ✅ Set or update total budget
 exports.setTotalBudget = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const { totalBudget } = req.body;
 
   if (totalBudget === undefined) {
@@ -33,7 +33,8 @@ exports.setTotalBudget = catchAsync(async (req, res, next) => {
 
 // ✅ Set category budget (adds new or updates existing)
 exports.setCategoryBudget = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  console.log("Setting category budget");
+  const userId = req.user;
   const { category, limit } = req.body;
 
   if (!category || limit === undefined) {
@@ -50,7 +51,8 @@ exports.setCategoryBudget = catchAsync(async (req, res, next) => {
 
 // ✅ Update total budget separately
 exports.updateTotalBudget = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  console.log("Updating total budget");
+  const userId = req.user;
   const { totalBudget } = req.body;
 
   if (totalBudget === undefined) {
@@ -70,7 +72,7 @@ exports.updateTotalBudget = catchAsync(async (req, res, next) => {
 
 // ✅ Update category budget separately
 exports.updateCategoryBudget = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const { category, limit } = req.body;
 
   if (!category || limit === undefined) {
@@ -91,7 +93,8 @@ exports.updateCategoryBudget = catchAsync(async (req, res, next) => {
 
 // ✅ Delete a category budget
 exports.deleteCategoryBudget = catchAsync(async (req, res, next) => {
-  const { id, userId } = req.params;
+  const userId = req.user;
+  const { id } = req.params;
 
   if (!id) {
     return next(new AppError("Budget ID is required!", 400));
@@ -106,7 +109,8 @@ exports.deleteCategoryBudget = catchAsync(async (req, res, next) => {
 });
 
 exports.updateSpent = catchAsync(async (req, res, next) => {
-  const { userId, category, amount, isAdding } = req.body;
+  const userId = req.user;
+  const { category, amount, isAdding } = req.body;
 
   if (!userId || !category || amount === undefined) {
     return next(

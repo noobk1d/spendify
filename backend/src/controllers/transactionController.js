@@ -3,7 +3,7 @@ const transactionService = require("../services/transactionService");
 const AppError = require("../utils/appError");
 
 exports.addTransaction = catchAsync(async (req, res, next) => {
-  const { userId } = req.params; // Retrieved from authentication middleware
+  const userId = req.user; // Retrieved from authentication middleware
   const transactionData = req.body;
 
   // Call service function to add transaction
@@ -19,7 +19,7 @@ exports.addTransaction = catchAsync(async (req, res, next) => {
 });
 
 exports.getTransactions = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  const userId = req.user;
 
   const transactions = await transactionService.getTransactions(
     userId,

@@ -94,6 +94,7 @@ export default function TransactionForm({ onClose, onSubmit }) {
             type="number"
             className="pl-7"
             placeholder="0.00"
+            autoComplete="off"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
@@ -141,8 +142,6 @@ export default function TransactionForm({ onClose, onSubmit }) {
             <SelectItem value="cash">Cash</SelectItem>
             <SelectItem value="bank">Bank Transfer</SelectItem>
             <SelectItem value="credit">Credit Card</SelectItem>
-            <SelectItem value="debit">Debit Card</SelectItem>
-            <SelectItem value="upi">UPI</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -151,6 +150,7 @@ export default function TransactionForm({ onClose, onSubmit }) {
         <Label htmlFor="description">Description</Label>
         <Input
           id="description"
+          autoComplete="off"
           placeholder="Transaction description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}

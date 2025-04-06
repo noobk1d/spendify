@@ -31,22 +31,46 @@ function ProfileSection() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
         const response = await fetch(
-          "http://127.0.0.1:3000/spendify/api/profile/me/67cf12a40004818c2916"
+          "http://127.0.0.1:3000/spendify/api/profile/me",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+              Accept: "application/json",
+              Origin: window.location.origin,
+            },
+            mode: "cors",
+            credentials: "include",
+          }
         );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile data");
+        }
+
         const data = await response.json();
+        if (data.status === "success") {
+          // Update both profile and formData with the API response
+          const updatedProfile = {
+            ...profile,
+            name: data.data.name || "Not specified",
+            email: data.data.email || "Not specified",
+            phone: data.data.phone || "Not specified",
+            location: data.data.location || "Not specified",
+          };
 
-        // Update both profile and formData with the API response
-        const updatedProfile = {
-          ...profile,
-          name: data.name || "Not specified",
-          email: data.email || "Not specified",
-          phone: data.phone || "Not specified",
-          location: data.location || "Not specified",
-        };
-
-        setProfile(updatedProfile);
-        setFormData(updatedProfile);
+          setProfile(updatedProfile);
+          setFormData(updatedProfile);
+        }
       } catch (error) {
         console.error("Error fetching profile data:", error);
         // Set default values in case of error
@@ -77,14 +101,27 @@ function ProfileSection() {
 
   const handleSave = async () => {
     try {
-      // Send PATCH request to update profile
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Send PUT request to update profile
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/profile/me/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/profile/me",
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+            Accept: "application/json",
+            Origin: window.location.origin,
           },
+          mode: "cors",
+          credentials: "include",
           body: JSON.stringify({
             name: formData.name,
             email: formData.email,
@@ -95,24 +132,25 @@ function ProfileSection() {
         }
       );
 
-      const data = await response.json();
-      console.log(data);
       if (!response.ok) {
-        throw new Error(data.message || "Failed to update profile");
+        throw new Error("Failed to update profile");
       }
 
-      // Update local state with the response data
-      const updatedProfile = {
-        ...profile,
-        name: data.profile.name,
-        email: data.profile.email,
-        phone: data.profile.phone,
-        location: data.profile.location || "Not specified",
-      };
+      const data = await response.json();
+      if (data.status === "success") {
+        // Update local state with the response data
+        const updatedProfile = {
+          ...profile,
+          name: data.data.name,
+          email: data.data.email,
+          phone: data.data.phone,
+          location: data.data.location || "Not specified",
+        };
 
-      setProfile(updatedProfile);
-      setFormData(updatedProfile);
-      setIsEditing(false);
+        setProfile(updatedProfile);
+        setFormData(updatedProfile);
+        setIsEditing(false);
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       // You might want to show an error message to the user here

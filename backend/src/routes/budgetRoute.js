@@ -1,21 +1,30 @@
 const express = require("express");
 const router = express.Router();
 const budgetController = require("../controllers/budgetController");
+const { verifyToken } = require("../utils/generateTokens");
 
 // 🔹 Get Budget Details (Merged with Summary)
-router.get("/total/:userId", budgetController.getBudget);
+router.get("/total", verifyToken, budgetController.getBudget);
 
 // 🔹 Add a New Budget Category
-router.post("/total/:userId", budgetController.setTotalBudget);
+router.post("/total", verifyToken, budgetController.setTotalBudget);
 
-router.post("/category/:userId", budgetController.setCategoryBudget);
+router.post("/category", verifyToken, budgetController.setCategoryBudget);
 
 // 🔹 Update an Existing Budget
-router.patch("/update/total/:userId", budgetController.updateTotalBudget);
+router.patch("/update/total", verifyToken, budgetController.updateTotalBudget);
 
-router.patch("/update/category/:userId", budgetController.updateCategoryBudget);
+router.patch(
+  "/update/category",
+  verifyToken,
+  budgetController.updateCategoryBudget
+);
 
 // 🔹 Delete a Budget Category
-router.delete("/delete/:id/:userId", budgetController.deleteCategoryBudget);
+router.delete(
+  "/delete/:id",
+  verifyToken,
+  budgetController.deleteCategoryBudget
+);
 
 module.exports = router;

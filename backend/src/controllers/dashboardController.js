@@ -3,7 +3,7 @@ const dashboardService = require("../services/dashboardService");
 const AppError = require("../utils/appError");
 
 exports.getDashboardData = catchAsync(async (req, res, next) => {
-  const { userId } = req.params;
+  const userId = req.user;
 
   let { filterType } = req.query;
   const today = new Date();

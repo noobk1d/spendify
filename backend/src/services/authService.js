@@ -18,7 +18,7 @@ exports.createUser = async (name, email, phone, password) => {
     const userRecord = await databases.createDocument(
       process.env.APPWRITE_DATABASE_ID, // Your database ID
       process.env.APPWRITE_USERS_COLLECTION_ID, // Your users collection ID
-      sdk.ID.unique(),
+      user.$id,
       {
         userId: user.$id,
         email: email,
@@ -26,7 +26,7 @@ exports.createUser = async (name, email, phone, password) => {
         phone: phone,
       }
     );
-    return user;
+    return { userId: user.$id, email: user.email }; // Return only the necessary fields
   } catch (error) {
     throw new AppError(error.message, 409);
   }

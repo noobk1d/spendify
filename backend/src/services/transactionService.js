@@ -39,13 +39,14 @@ exports.addTransaction = async (userId, transactionData) => {
     let updateWallet = {};
     if (category === "creditCardPayment") {
       updateWallet = {
+        mode: "transaction",
         [paymentMethod]: amount,
         type,
         creditCard: amount,
         category: "creditCardPayment",
       };
     } else {
-      updateWallet = { [paymentMethod]: amount, type };
+      updateWallet = { mode: "transaction", [paymentMethod]: amount, type };
     }
 
     // 🔄 Update Wallet Balance via Wallet Service
@@ -188,7 +189,10 @@ exports.getTransactions = async (userId, filters) => {
     const transactions = await databases.listDocuments(
       DATABASE_ID,
       COLLECTION_ID,
-      queryFilters
+      [
+        ...queryFilters,
+        Query.orderDesc("date"), // or Query.orderAsc("date") for oldest first
+      ]
     );
 
     return transactions;

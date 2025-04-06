@@ -1,5 +1,6 @@
 const express = require("express");
 const profileController = require("../controllers/profileController");
+const { verifyToken } = require("../utils/generateTokens");
 
 const app = express();
 //Middleware
@@ -9,9 +10,8 @@ const router = express.Router();
 
 //Auth
 router
-  .route("/me/:userId")
-  .get(profileController.getMe)
-  .put(profileController.updateMe);
-// router.post("/auth/login", authController.login);
+  .route("/me")
+  .get(verifyToken, profileController.getMe)
+  .put(verifyToken, profileController.updateMe);
 
 module.exports = router;

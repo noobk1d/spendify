@@ -3,7 +3,7 @@ const catchAsync = require("../utils/catchAsync");
 
 // ✅ Add a recurring transaction
 exports.addRecurringTransaction = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const transaction = await recurringService.addRecurringTransaction(
     req.body,
     userId
@@ -13,14 +13,15 @@ exports.addRecurringTransaction = catchAsync(async (req, res) => {
 
 // ✅ Get all recurring transactions
 exports.getRecurringTransactions = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const transactions = await recurringService.getRecurringTransactions(userId);
   res.status(200).json(transactions);
 });
 
 // ✅ Pause a recurring transaction
 exports.pauseRecurringTransaction = catchAsync(async (req, res) => {
-  const { id, userId } = req.params;
+  const { id } = req.params;
+  const userId = req.user;
   if (!id || !userId) {
     return next(new AppError("Transaction ID and User ID are required", 400));
   }
@@ -34,7 +35,7 @@ exports.pauseRecurringTransaction = catchAsync(async (req, res) => {
 // ✅ Resume a recurring transaction
 exports.resumeRecurringTransaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const userId = req.params.userId;
+  const userId = req.user;
   if (!id || !userId) {
     return next(new AppError("Transaction ID and User ID are required", 400));
   }
@@ -48,7 +49,7 @@ exports.resumeRecurringTransaction = catchAsync(async (req, res) => {
 // ✅ Delete a recurring transaction
 exports.deleteRecurringTransaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const userId = req.params.userId;
+  const userId = req.user;
   if (!transactionId || !userId) {
     return next(new AppError("Transaction ID and User ID are required", 400));
   }

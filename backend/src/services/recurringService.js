@@ -57,7 +57,6 @@ exports.getRecurringTransactions = async (userId) => {
 
 // ✅ Pause a recurring transaction
 exports.pauseRecurringTransaction = async (transactionId, userId) => {
-  console.log(2);
   try {
     if (!transactionId || !userId)
       throw new Error("Transaction ID and User ID are required");

@@ -21,7 +21,29 @@ const errorController = require("./src/controllers/errorController");
 
 const app = express();
 
-app.use(cors()); // ✅ Allow all origins (for testing)
+// CORS configuration
+const corsOptions = {
+  origin: true, // Allow all origins
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+    "Cache-Control",
+    "Pragma",
+    "Expires",
+  ],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Enable preflight for all routes
 app.use(express.json());
 
 app.use(helmet());
@@ -42,6 +64,8 @@ const limiter = rateLimit({
   message: "Too many requests from this IP,please try again later in an hour!",
 });
 app.use("/api", limiter);
+
+// Add request logging middleware
 
 //ROUTE
 

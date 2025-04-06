@@ -17,7 +17,7 @@ export function SpendingHeatmap({ data, timeframe }) {
     return "bg-green-500";
   };
 
-  const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+  const dayNames = ["M", "T", "W", "T", "F", "S", "S"];
   const monthName = currentDate.toLocaleString("default", { month: "long" });
   const year = currentDate.getFullYear();
 

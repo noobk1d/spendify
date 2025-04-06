@@ -55,9 +55,23 @@ export default function DashboardContent() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        `http://127.0.0.1:3000/spendify/api/dashboard/67cf12a40004818c2916?filterType=${timeframe}`
+        `http://127.0.0.1:3000/spendify/api/dashboard?filterType=${timeframe}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
       );
+
       if (!response.ok) {
         throw new Error("Failed to fetch dashboard data");
       }
@@ -96,12 +110,18 @@ export default function DashboardContent() {
 
   const handleAddTransaction = async (transactionData) => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/transaction",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             amount: Number(transactionData.amount),
@@ -111,6 +131,7 @@ export default function DashboardContent() {
             note: transactionData.description,
             date: transactionData.date,
           }),
+          credentials: "include",
         }
       );
 
@@ -204,7 +225,7 @@ export default function DashboardContent() {
               onClick={() => setShowAddTransaction(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Add Transaction
+              New Transaction
             </Button>
           </div>
         </div>

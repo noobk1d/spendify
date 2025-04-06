@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import {
   LayoutDashboard,
@@ -15,9 +15,24 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../components/ui/Dashboard/avatar";
+import { useState } from "react";
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(() => {
+    const storedProfile = localStorage.getItem("userProfile");
+    return storedProfile ? JSON.parse(storedProfile) : { name: "", email: "" };
+  });
+
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("userProfile");
+
+    // Redirect to landing page
+    navigate("/");
+  };
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -59,13 +74,22 @@ export default function Sidebar() {
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src="/placeholder.svg?height=36&width=36" alt="User" />
-            <AvatarFallback>GP</AvatarFallback>
+            <AvatarFallback>
+              {profile.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="text-sm font-medium">Gillian P.</span>
-            <span className="text-xs text-gray-500">gillian.p@example.com</span>
+            <span className="text-sm font-medium">{profile.name}</span>
+            <span className="text-xs text-gray-500">{profile.email}</span>
           </div>
-          <Button variant="ghost" size="icon" className="ml-auto">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto"
+            onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

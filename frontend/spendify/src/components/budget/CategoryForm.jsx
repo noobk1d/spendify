@@ -14,12 +14,14 @@ export function CategoryForm({ onSubmit, onCancel }) {
     e.preventDefault();
     try {
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/budget/category/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/budget/category",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             category: formData.category.toLowerCase(),
             limit: Number(formData.limit),

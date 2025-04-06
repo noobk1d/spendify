@@ -15,19 +15,20 @@ import MuiCard from "@mui/material/Card";
 import { styled } from "@mui/material/styles";
 import ColorModeSelect from "../components/signin/ColorModeSelect";
 import { GoogleIcon } from "../components/signin/CustomIcons";
-import { Client, Account, OAuthProvider } from "appwrite";
 import { useNavigate } from "react-router-dom";
+import { account } from "../lib/appwrite";
+import { OAuthProvider } from "appwrite";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignSelf: "center",
   width: "100%",
-  padding: theme.spacing(3),
-  gap: theme.spacing(2),
+  padding: theme.spacing(1.5),
+  gap: theme.spacing(1),
   margin: "auto",
   [theme.breakpoints.up("sm")]: {
-    maxWidth: "400px",
+    maxWidth: "350px",
   },
   boxShadow:
     "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
@@ -60,13 +61,6 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-// Initialize Appwrite client
-const client = new Client()
-  .setEndpoint("https://cloud.appwrite.io/v1")
-  .setProject("67cb42410000c1e48f09");
-
-const account = new Account(client);
-
 export default function SignUp(props) {
   const navigate = useNavigate();
   const [nameError, setNameError] = React.useState(false);
@@ -75,28 +69,96 @@ export default function SignUp(props) {
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = React.useState(false);
+  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
+    React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSubmit = async (event) => {
-    if (nameError || emailError || passwordError) {
-      event.preventDefault();
-      return;
-    }
+    event.preventDefault();
     setIsLoading(true);
     const data = new FormData(event.currentTarget);
+
     try {
-      await account.create(
-        "unique()",
-        data.get("email"),
-        data.get("password"),
-        data.get("name")
+      console.log("Attempting signup with:", {
+        name: data.get("name"),
+        email: data.get("email"),
+        password: data.get("password"),
+      });
+
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/auth/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          mode: "cors",
+          credentials: "include",
+          body: JSON.stringify({
+            name: data.get("name"),
+            email: data.get("email"),
+            password: data.get("password"),
+            confirmPassword: data.get("confirmPassword"),
+          }),
+        }
       );
-      await account.createEmailSession(data.get("email"), data.get("password"));
-      navigate("/wallet-setup");
+
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error response:", errorData);
+        throw new Error(errorData.message || "Signup failed");
+      }
+
+      const result = await response.json();
+      console.log("Signup successful, response:", result);
+
+      if (result.data && result.data.token) {
+        localStorage.setItem("jwt", result.data.token);
+
+        // Fetch profile data after successful signup
+        const profileResponse = await fetch(
+          "http://127.0.0.1:3000/spendify/api/profile/me",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${result.data.token}`,
+              Accept: "application/json",
+            },
+            mode: "cors",
+            credentials: "include",
+          }
+        );
+
+        if (!profileResponse.ok) {
+          throw new Error("Failed to fetch profile data");
+        }
+
+        const profileData = await profileResponse.json();
+        if (profileData.status === "success") {
+          localStorage.setItem("userProfile", JSON.stringify(profileData.data));
+        }
+
+        navigate("/wallet");
+      } else {
+        throw new Error("No token received from server");
+      }
     } catch (error) {
-      console.error("Error signing up:", error);
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
       setEmailError(true);
-      setEmailErrorMessage("Email already exists or invalid");
+      setEmailErrorMessage(error.message || "Signup failed");
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +183,7 @@ export default function SignUp(props) {
     const name = document.getElementById("name");
     const email = document.getElementById("email");
     const password = document.getElementById("password");
+    const confirmPassword = document.getElementById("confirmPassword");
 
     let isValid = true;
 
@@ -151,6 +214,15 @@ export default function SignUp(props) {
       setPasswordErrorMessage("");
     }
 
+    if (!confirmPassword.value || confirmPassword.value !== password.value) {
+      setConfirmPasswordError(true);
+      setConfirmPasswordErrorMessage("Passwords do not match.");
+      isValid = false;
+    } else {
+      setConfirmPasswordError(false);
+      setConfirmPasswordErrorMessage("");
+    }
+
     return isValid;
   };
 
@@ -158,17 +230,17 @@ export default function SignUp(props) {
     <SignUpContainer direction="column" justifyContent="space-between">
       <ColorModeSelect sx={{ position: "fixed", top: "1rem", right: "1rem" }} />
       <Card variant="outlined">
-        <div className="flex flex-col items-start mb-4">
+        <div className="flex flex-col items-start mb-2">
           <img
             src="/Spendify-removebg-preview.png"
             alt="Spendify Logo"
-            className="h-12 w-auto mb-2"
+            className="h-10 w-auto mb-1"
           />
           <Typography
             component="h1"
             variant="h4"
             sx={{
-              fontSize: "clamp(1.75rem, 8vw, 2rem)",
+              fontSize: "clamp(1.5rem, 8vw, 1.75rem)",
               color: "#000000",
             }}>
             Sign up
@@ -182,7 +254,7 @@ export default function SignUp(props) {
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            gap: 1.5,
+            gap: 0.75,
           }}>
           <FormControl>
             <FormLabel htmlFor="name" sx={{ color: "#000000" }}>
@@ -195,7 +267,7 @@ export default function SignUp(props) {
               type="text"
               name="name"
               placeholder="Your name"
-              autoComplete="name"
+              autoComplete="off"
               autoFocus
               required
               fullWidth
@@ -240,7 +312,9 @@ export default function SignUp(props) {
             />
           </FormControl>
           <FormControl>
-            <FormLabel htmlFor="password" sx={{ color: "#000000" }}>
+            <FormLabel
+              htmlFor="password"
+              sx={{ color: "#000000", fontSize: "0.875rem" }}>
               Password
             </FormLabel>
             <TextField
@@ -258,7 +332,7 @@ export default function SignUp(props) {
               size="small"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  height: "40px",
+                  height: "36px",
                 },
                 "& .MuiInputLabel-root": {
                   color: "#000000",
@@ -266,7 +340,35 @@ export default function SignUp(props) {
               }}
             />
           </FormControl>
-
+          <FormControl>
+            <FormLabel
+              htmlFor="confirmPassword"
+              sx={{ color: "#000000", fontSize: "0.875rem" }}>
+              Confirm Password
+            </FormLabel>
+            <TextField
+              error={confirmPasswordError}
+              helperText={confirmPasswordErrorMessage}
+              name="confirmPassword"
+              placeholder="••••••"
+              type="password"
+              id="confirmPassword"
+              autoComplete="new-password"
+              required
+              fullWidth
+              variant="outlined"
+              color={confirmPasswordError ? "error" : "primary"}
+              size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  height: "36px",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#000000",
+                },
+              }}
+            />
+          </FormControl>
           <Button
             type="submit"
             fullWidth
@@ -279,15 +381,16 @@ export default function SignUp(props) {
               "&:hover": {
                 backgroundColor: "#333333",
               },
-              height: "40px",
+              height: "36px",
               textTransform: "none",
               fontSize: "0.9rem",
+              mt: 0.5,
             }}>
             {isLoading ? "Signing up..." : "Sign up"}
           </Button>
         </Box>
-        <Divider sx={{ my: 2 }}>or</Divider>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Divider sx={{ my: 1 }}>or</Divider>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <Button
             type="button"
             fullWidth
@@ -302,14 +405,15 @@ export default function SignUp(props) {
                 borderColor: "#333333",
                 backgroundColor: "rgba(0, 0, 0, 0.04)",
               },
-              height: "40px",
+              height: "36px",
               textTransform: "none",
               fontSize: "0.9rem",
             }}>
             {isLoading ? "Connecting..." : "Sign up with Google"}
           </Button>
 
-          <Typography sx={{ textAlign: "center", color: "#000000" }}>
+          <Typography
+            sx={{ textAlign: "center", color: "#000000", fontSize: "0.8rem" }}>
             Already have an account?{" "}
             <Link
               href="/signin"
@@ -320,6 +424,7 @@ export default function SignUp(props) {
                 "&:hover": {
                   color: "#333333",
                 },
+                fontSize: "0.8rem",
               }}>
               Sign in
             </Link>

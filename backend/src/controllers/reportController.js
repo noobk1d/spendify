@@ -2,7 +2,7 @@ const catchAsync = require("../utils/catchAsync");
 const reportService = require("../services/reportService");
 
 exports.getAnalyticsData = catchAsync(async (req, res, next) => {
-  const { userId } = req.params; // Extract from auth middleware
+  const userId = req.user; // Extract from auth middleware
   const { timeframe } = req.query;
 
   // Validate timeframe

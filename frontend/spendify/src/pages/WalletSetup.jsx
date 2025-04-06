@@ -63,25 +63,54 @@ export default function WalletSetup() {
     React.useState("");
 
   const handleSubmit = async (event) => {
+    event.preventDefault();
     if (cashAmountError || bankBalanceError) {
-      event.preventDefault();
       return;
     }
     const data = new FormData(event.currentTarget);
     const walletData = {
-      cashAmount: data.get("cashAmount"),
-      bankBalance: data.get("bankBalance"),
+      cash: Number(data.get("cashAmount")),
+      bank: Number(data.get("bankBalance")),
     };
 
     try {
-      // Here you would typically make an API call to save the wallet details
-      // For now, we'll just simulate a successful save
-      console.log("Saving wallet data:", walletData);
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
-      // Navigate to dashboard after successful save
+      console.log("Sending request with token:", token); // Debug log
+
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/wallet",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify(walletData),
+        }
+      );
+
+      console.log("Response status:", response.status); // Debug log
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      ); // Debug log
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData); // Debug log
+        throw new Error(errorData.message || "Failed to create wallet");
+      }
+
+      const result = await response.json();
+      console.log("Wallet created successfully:", result);
       navigate("/dashboard");
     } catch (error) {
-      console.error("Error saving wallet data:", error);
+      console.error("Error creating wallet:", error);
       // You might want to show an error message to the user here
     }
   };

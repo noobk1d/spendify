@@ -22,16 +22,18 @@ exports.verifyToken = (req, res, next) => {
     // Get token from header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("No token provided", 401);
+      throw new AppError(
+        "You are not logged in!Please log in to get access.",
+        401
+      );
     }
 
     const token = authHeader.split(" ")[1];
 
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
-
     // Add user ID to request object
-    req.user = decoded;
+    req.user = decoded.id;
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {

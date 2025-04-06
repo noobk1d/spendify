@@ -1,19 +1,25 @@
 const express = require("express");
 const router = express.Router();
 const recurringController = require("../controllers/recurringController");
+const { verifyToken } = require("../utils/generateTokens");
 
-router.post("/:userId", recurringController.addRecurringTransaction);
-router.get("/:userId", recurringController.getRecurringTransactions);
+router
+  .route("/")
+  .post(verifyToken, recurringController.addRecurringTransaction)
+  .get(verifyToken, recurringController.getRecurringTransactions);
 router.patch(
-  "/:userId/pause/:id",
+  "/pause/:id",
+  verifyToken,
   recurringController.pauseRecurringTransaction
 );
 router.patch(
-  "/:userId/resume/:id",
+  "/resume/:id",
+  verifyToken,
   recurringController.resumeRecurringTransaction
 );
 router.delete(
-  "/:userId/delete/:id",
+  "/delete/:id",
+  verifyToken,
   recurringController.deleteRecurringTransaction
 );
 

@@ -117,6 +117,7 @@ exports.setCategoryBudget = async (userId, category, limit) => {
       );
     }
   } catch (error) {
+    console.log(error);
     throw new AppError("Error setting category budget: " + error.message, 500);
   }
 };

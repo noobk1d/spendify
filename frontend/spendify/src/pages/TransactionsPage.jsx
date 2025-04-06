@@ -100,6 +100,34 @@ const categories = [
 // Payment methods for filtering
 const paymentMethods = ["All Methods", "Credit Card", "Cash", "Bank Transfer"];
 
+// Function to convert display payment method to API format
+const convertPaymentMethodToApiFormat = (method) => {
+  switch (method) {
+    case "Credit Card":
+      return "creditCard";
+    case "Cash":
+      return "cash";
+    case "Bank Transfer":
+      return "bank";
+    default:
+      return method;
+  }
+};
+
+// Function to convert API payment method to display format
+const convertPaymentMethodToDisplayFormat = (method) => {
+  switch (method) {
+    case "creditCard":
+      return "Credit Card";
+    case "cash":
+      return "Cash";
+    case "bank":
+      return "Bank Transfer";
+    default:
+      return method;
+  }
+};
+
 export default function TransactionsPage() {
   // State for loading
   const [loading, setLoading] = useState(true);
@@ -145,7 +173,12 @@ export default function TransactionsPage() {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        let url = `http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916?filterType=${dateFilterType}`;
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
+        let url = `http://127.0.0.1:3000/spendify/api/transaction?filterType=${dateFilterType}`;
 
         if (dateFilterType === "custom" && dateRange.from && dateRange.to) {
           url += `&startDate=${dateRange.from}&endDate=${dateRange.to}`;
@@ -156,14 +189,28 @@ export default function TransactionsPage() {
         }
 
         if (selectedPaymentMethod !== "All Methods") {
-          url += `&paymentMethod=${encodeURIComponent(selectedPaymentMethod)}`;
+          const apiPaymentMethod = convertPaymentMethodToApiFormat(
+            selectedPaymentMethod
+          );
+          url += `&paymentMethod=${apiPaymentMethod}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          credentials: "include",
+        });
+
         if (!response.ok) {
           throw new Error("Failed to fetch transactions");
         }
+
         const result = await response.json();
+
         if (result.status === "success") {
           setTransactions(result.data);
         }
@@ -212,9 +259,17 @@ export default function TransactionsPage() {
     const matchesCategory =
       selectedCategory === "All Categories" ||
       transaction.category === selectedCategory;
+
+    // Convert both payment methods to the same format for comparison
+    const transactionPaymentMethod = transaction.paymentMethod.toLowerCase();
+    const selectedPaymentMethodFormatted =
+      selectedPaymentMethod === "All Methods"
+        ? "all methods"
+        : convertPaymentMethodToApiFormat(selectedPaymentMethod).toLowerCase();
+
     const matchesPaymentMethod =
       selectedPaymentMethod === "All Methods" ||
-      transaction.paymentMethod === selectedPaymentMethod;
+      transactionPaymentMethod === selectedPaymentMethodFormatted;
 
     // Date filtering
     let matchesDate = true;
@@ -314,13 +369,20 @@ export default function TransactionsPage() {
 
   const handleAddTransaction = async (transactionData) => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/transaction",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             amount: Number(transactionData.amount),
             type: transactionData.type,
@@ -331,8 +393,8 @@ export default function TransactionsPage() {
           }),
         }
       );
-
       const data = await response.json();
+      console.log(data);
 
       if (data.success) {
         // Show success animation first
@@ -350,7 +412,15 @@ export default function TransactionsPage() {
 
         // Refresh transactions list
         const refreshResponse = await fetch(
-          `http://127.0.0.1:3000/spendify/api/transaction/67cf12a40004818c2916?filterType=${dateFilterType}`
+          `http://127.0.0.1:3000/spendify/api/transaction?filterType=${dateFilterType}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
         );
         const refreshData = await refreshResponse.json();
         if (refreshData.status === "success") {
@@ -408,9 +478,8 @@ export default function TransactionsPage() {
 
             <div className="flex items-center gap-2 mt-4 md:mt-0">
               <Button
-                variant="outline"
                 size="sm"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white"
                 onClick={() => setNewTransactionOpen(true)}>
                 <Plus className="h-4 w-4" />
                 New Transaction
@@ -596,7 +665,9 @@ export default function TransactionsPage() {
                                   </Badge>
                                 </td>
                                 <td className="p-4 align-middle text-sm">
-                                  {transaction.paymentMethod}
+                                  {convertPaymentMethodToDisplayFormat(
+                                    transaction.paymentMethod
+                                  )}
                                 </td>
                                 <td
                                   className={`p-4 align-middle text-right font-medium ${

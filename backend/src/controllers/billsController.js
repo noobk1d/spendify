@@ -3,7 +3,7 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.addBill = catchAsync(async (req, res) => {
   const { name, category, amount, dueDate, status } = req.body;
-  const { userId } = req.params;
+  const userId = req.user;
 
   const bill = await billsService.createBill(
     userId,
@@ -17,9 +17,9 @@ exports.addBill = catchAsync(async (req, res) => {
 });
 
 exports.getAllBills = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const bills = await billsService.fetchAllBills(userId);
-  res.json(bills);
+  res.status(200).json(bills);
 });
 
 exports.updateBill = catchAsync(async (req, res) => {
@@ -37,13 +37,13 @@ exports.deleteBill = catchAsync(async (req, res) => {
 });
 
 exports.getUpcomingBills = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const upcomingBills = await billsService.fetchUpcomingBill(userId);
   res.status(200).json(upcomingBills);
 });
 
 exports.getTotalBillsSummary = catchAsync(async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user;
   const summary = await billsService.fetchBillsSummary(userId);
   res.status(200).json(summary);
 });

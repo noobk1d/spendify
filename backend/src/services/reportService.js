@@ -17,12 +17,16 @@ const getDateRange = (timeframe) => {
   if (timeframe === "weekly") {
     // Get start of current week (Monday)
     startDate = new Date(today);
-    startDate.setDate(today.getDate() - today.getDay() + 1);
-    startDate.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
 
-    // Get end of current week (Sunday)
-    endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
+    // Calculate the date of Monday
+    const mondayDate = new Date(today);
+    mondayDate.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    mondayDate.setHours(0, 0, 0, 0);
+    startDate = mondayDate;
+
+    // Set end date to current day
+    endDate = new Date(today);
     endDate.setHours(23, 59, 59, 999);
   } else {
     // Get start of current month
@@ -33,6 +37,10 @@ const getDateRange = (timeframe) => {
     endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     endDate.setHours(23, 59, 59, 999);
   }
+
+  // Log the dates for debugging
+  console.log("Start Date:", startDate.toISOString());
+  console.log("End Date:", endDate.toISOString());
 
   return { startDate, endDate };
 };
@@ -231,7 +239,8 @@ const processTransactions = (transactions, timeframe) => {
     let key;
 
     if (timeframe === "weekly") {
-      key = date.getDay() - 1; // Monday = 0, Sunday = 6
+      // Adjust the day to make Monday = 0, Sunday = 6
+      key = (date.getDay() + 6) % 7;
     } else {
       key = Math.floor((date.getDate() - 1) / 7); // Week number (0-3)
     }
@@ -254,12 +263,18 @@ const processTransactions = (transactions, timeframe) => {
       if (txn.type === "income") {
         data.totalIncome += amount;
         data.incomeData[index] += amount;
+        totalAmount += amount;
+        // Track category totals for income
+        if (!categoryTotals[txn.category]) {
+          categoryTotals[txn.category] = 0;
+        }
+        categoryTotals[txn.category] += amount;
       } else {
         data.totalExpenses += amount;
         data.expenseData[index] += amount;
         totalAmount += amount;
 
-        // Track category totals
+        // Track category totals for expenses
         if (!categoryTotals[txn.category]) {
           categoryTotals[txn.category] = 0;
         }
@@ -268,19 +283,19 @@ const processTransactions = (transactions, timeframe) => {
         if (timeframe === "weekly") {
           data.heatmapData[index] += amount;
         } else {
-          const dayOfWeek = txn.date.getDay() - 1; // Use the stored date
+          const dayOfWeek = txn.date.getDay() - 1;
           data.heatmapData[index][dayOfWeek] += amount;
         }
       }
     });
 
-    // Store daily trend data with categories
+    // Store daily trend data with combined categories
     data.dailyTrends.data[index] = {
       amount: totalAmount,
       categories: Object.entries(categoryTotals).map(([category, amount]) => ({
         category,
         amount,
-        percentage: (amount / totalAmount) * 100,
+        percentage: totalAmount > 0 ? (amount / totalAmount) * 100 : 0,
       })),
     };
   });

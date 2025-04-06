@@ -44,8 +44,21 @@ export default function BudgetPage() {
   const fetchBudgetData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/budget/total/67cf12a40004818c2916"
+        "http://127.0.0.1:3000/spendify/api/budget/total",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
       );
       const data = await response.json();
       if (data.status === "success") {
@@ -68,13 +81,20 @@ export default function BudgetPage() {
   // Update total budget
   const handleUpdateTotalBudget = async () => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/budget/total/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/budget/total",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({ totalBudget: Number(totalBudget) }),
         }
       );
@@ -105,16 +125,37 @@ export default function BudgetPage() {
   // Add category budget
   const handleAddCategory = async (newCategory) => {
     try {
-      setShowStatusAnimation(true);
-      setStatusAnimation({
-        status: "success",
-        message: "Category budget added successfully!",
-      });
-      setShowAddCategory(false);
-      fetchBudgetData();
-      setTimeout(() => {
-        setShowStatusAnimation(false);
-      }, 3000);
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/budget/category",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify(newCategory),
+        }
+      );
+
+      const data = await response.json();
+      if (data.status === "success") {
+        setShowStatusAnimation(true);
+        setStatusAnimation({
+          status: "success",
+          message: "Category budget added successfully!",
+        });
+        setShowAddCategory(false);
+        fetchBudgetData();
+        setTimeout(() => {
+          setShowStatusAnimation(false);
+        }, 3000);
+      }
     } catch (error) {
       setStatusAnimation({
         status: "error",
@@ -130,13 +171,20 @@ export default function BudgetPage() {
   // Update category budget
   const handleUpdateCategory = async () => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      console.log(editingCategory);
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/budget/update/category/67cf12a40004818c2916",
+        "http://127.0.0.1:3000/spendify/api/budget/update/category",
         {
-          method: "POST",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             category: editingCategory.category,
             limit: Number(editingCategory.limit),
@@ -173,10 +221,20 @@ export default function BudgetPage() {
   // Delete category budget
   const handleDeleteCategory = async (categoryId) => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        `http://127.0.0.1:3000/spendify/api/budget/delete/${categoryId}/67cf12a40004818c2916`,
+        `http://127.0.0.1:3000/spendify/api/budget/delete/${categoryId}`,
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
         }
       );
 
@@ -353,16 +411,6 @@ export default function BudgetPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <Input
-                  placeholder="Category name"
-                  value={editingCategory?.category || ""}
-                  onChange={(e) =>
-                    setEditingCategory({
-                      ...editingCategory,
-                      category: e.target.value,
-                    })
-                  }
-                />
                 <Input
                   type="number"
                   placeholder="Budget limit"

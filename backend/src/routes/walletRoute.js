@@ -1,5 +1,6 @@
 const express = require("express");
 const walletController = require("../controllers/walletController");
+const { verifyToken } = require("../utils/generateTokens");
 
 const app = express();
 //Middleware
@@ -9,9 +10,9 @@ const router = express.Router();
 
 //Auth
 router
-  .route("/:userId")
-  .get(walletController.getUserWallet)
-  .post(walletController.createUserWallet)
-  .put(walletController.updateUserWallet);
+  .route("")
+  .get(verifyToken, walletController.getUserWallet)
+  .post(verifyToken, walletController.createUserWallet)
+  .put(verifyToken, walletController.updateUserWallet);
 
 module.exports = router;

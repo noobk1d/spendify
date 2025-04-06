@@ -13,19 +13,20 @@ import { styled } from "@mui/material/styles";
 import ForgotPassword from "../components/signin/ForgotPassword";
 import ColorModeSelect from "../components/signin/ColorModeSelect";
 import { GoogleIcon } from "../components/signin/CustomIcons";
-import { Client, Account, OAuthProvider } from "appwrite";
 import { useNavigate } from "react-router-dom";
+import { account } from "../lib/appwrite";
+import { OAuthProvider } from "appwrite";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignSelf: "center",
   width: "100%",
-  padding: theme.spacing(3),
-  gap: theme.spacing(2),
+  padding: theme.spacing(1.5),
+  gap: theme.spacing(1),
   margin: "auto",
   [theme.breakpoints.up("sm")]: {
-    maxWidth: "400px",
+    maxWidth: "350px",
   },
   boxShadow:
     "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
@@ -58,13 +59,6 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-// Initialize Appwrite client
-const client = new Client()
-  .setEndpoint("https://cloud.appwrite.io/v1")
-  .setProject("67cb42410000c1e48f09");
-
-const account = new Account(client);
-
 export default function SignIn(props) {
   const navigate = useNavigate();
   const [emailError, setEmailError] = React.useState(false);
@@ -83,19 +77,81 @@ export default function SignIn(props) {
   };
 
   const handleSubmit = async (event) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
-      return;
-    }
+    event.preventDefault();
     setIsLoading(true);
     const data = new FormData(event.currentTarget);
+
     try {
-      await account.createEmailSession(data.get("email"), data.get("password"));
-      navigate("/dashboard");
+      console.log("Attempting login with:", {
+        email: data.get("email"),
+        password: data.get("password"),
+      });
+
+      const response = await fetch(
+        "http://127.0.0.1:3000/spendify/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          mode: "cors",
+          credentials: "include",
+          body: JSON.stringify({
+            email: data.get("email"),
+            password: data.get("password"),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error response:", errorData);
+        throw new Error(errorData.message || "Login failed");
+      }
+
+      const result = await response.json();
+      console.log("Login successful, response:", result);
+
+      if (result.data && result.data.token) {
+        localStorage.setItem("jwt", result.data.token);
+
+        // Fetch profile data after successful login
+        const profileResponse = await fetch(
+          "http://127.0.0.1:3000/spendify/api/profile/me",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${result.data.token}`,
+              Accept: "application/json",
+            },
+            mode: "cors",
+            credentials: "include",
+          }
+        );
+
+        if (!profileResponse.ok) {
+          throw new Error("Failed to fetch profile data");
+        }
+
+        const profileData = await profileResponse.json();
+        if (profileData.status === "success") {
+          localStorage.setItem("userProfile", JSON.stringify(profileData.data));
+        }
+
+        navigate("/dashboard");
+      } else {
+        throw new Error("No token received from server");
+      }
     } catch (error) {
-      console.error("Error signing in:", error);
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
       setEmailError(true);
-      setEmailErrorMessage("Invalid email or password");
+      setEmailErrorMessage(error.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +167,8 @@ export default function SignIn(props) {
       );
     } catch (error) {
       console.error("Error with Google sign in:", error);
+      setEmailError(true);
+      setEmailErrorMessage("Failed to sign in with Google. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -147,17 +205,17 @@ export default function SignIn(props) {
     <SignInContainer direction="column" justifyContent="space-between">
       <ColorModeSelect sx={{ position: "fixed", top: "1rem", right: "1rem" }} />
       <Card variant="outlined">
-        <div className="flex flex-col items-start mb-4">
+        <div className="flex flex-col items-start mb-2">
           <img
             src="/Spendify-removebg-preview.png"
             alt="Spendify Logo"
-            className="h-12 w-auto mb-2"
+            className="h-10 w-auto mb-1"
           />
           <Typography
             component="h1"
             variant="h4"
             sx={{
-              fontSize: "clamp(1.75rem, 8vw, 2rem)",
+              fontSize: "clamp(1.5rem, 8vw, 1.75rem)",
               color: "#000000",
             }}>
             Sign in
@@ -171,10 +229,12 @@ export default function SignIn(props) {
             display: "flex",
             flexDirection: "column",
             width: "100%",
-            gap: 1.5,
+            gap: 0.75,
           }}>
           <FormControl>
-            <FormLabel htmlFor="email" sx={{ color: "#000000" }}>
+            <FormLabel
+              htmlFor="email"
+              sx={{ color: "#000000", fontSize: "0.875rem" }}>
               Email
             </FormLabel>
             <TextField
@@ -184,7 +244,7 @@ export default function SignIn(props) {
               type="email"
               name="email"
               placeholder="your@email.com"
-              autoComplete="email"
+              autoComplete="off"
               autoFocus
               required
               fullWidth
@@ -193,7 +253,7 @@ export default function SignIn(props) {
               size="small"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  height: "40px",
+                  height: "36px",
                 },
                 "& .MuiInputLabel-root": {
                   color: "#000000",
@@ -202,7 +262,9 @@ export default function SignIn(props) {
             />
           </FormControl>
           <FormControl>
-            <FormLabel htmlFor="password" sx={{ color: "#000000" }}>
+            <FormLabel
+              htmlFor="password"
+              sx={{ color: "#000000", fontSize: "0.875rem" }}>
               Password
             </FormLabel>
             <TextField
@@ -213,7 +275,6 @@ export default function SignIn(props) {
               type="password"
               id="password"
               autoComplete="current-password"
-              autoFocus
               required
               fullWidth
               variant="outlined"
@@ -221,7 +282,7 @@ export default function SignIn(props) {
               size="small"
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  height: "40px",
+                  height: "36px",
                 },
                 "& .MuiInputLabel-root": {
                   color: "#000000",
@@ -243,9 +304,10 @@ export default function SignIn(props) {
               "&:hover": {
                 backgroundColor: "#333333",
               },
-              height: "40px",
+              height: "36px",
               textTransform: "none",
               fontSize: "0.9rem",
+              mt: 0.5,
             }}>
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
@@ -260,12 +322,14 @@ export default function SignIn(props) {
               "&:hover": {
                 color: "#333333",
               },
+              fontSize: "0.8rem",
+              py: 0.5,
             }}>
             Forgot your password?
           </Link>
         </Box>
-        <Divider sx={{ my: 2 }}>or</Divider>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Divider sx={{ my: 1 }}>or</Divider>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <Button
             type="button"
             fullWidth
@@ -280,14 +344,15 @@ export default function SignIn(props) {
                 borderColor: "#333333",
                 backgroundColor: "rgba(0, 0, 0, 0.04)",
               },
-              height: "40px",
+              height: "36px",
               textTransform: "none",
               fontSize: "0.9rem",
             }}>
             {isLoading ? "Connecting..." : "Sign in with Google"}
           </Button>
 
-          <Typography sx={{ textAlign: "center", color: "#000000" }}>
+          <Typography
+            sx={{ textAlign: "center", color: "#000000", fontSize: "0.8rem" }}>
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
@@ -298,6 +363,7 @@ export default function SignIn(props) {
                 "&:hover": {
                   color: "#333333",
                 },
+                fontSize: "0.8rem",
               }}>
               Sign up
             </Link>

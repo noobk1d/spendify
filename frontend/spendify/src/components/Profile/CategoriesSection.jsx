@@ -31,13 +31,41 @@ function CategoriesSection() {
 
   const fetchCategories = async () => {
     try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
-        "http://127.0.0.1:3000/spendify/api/categories/67cf12a40004818c2916"
+        "http://127.0.0.1:3000/spendify/api/categories",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Accept: "application/json",
+            Origin: window.location.origin,
+          },
+          mode: "cors",
+          credentials: "include",
+        }
       );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories");
+      }
+
       const data = await response.json();
-      setCategories(data);
+      if (data.status === "success") {
+        setCategories(data.data || []);
+      } else {
+        setCategories([]);
+      }
     } catch (error) {
       console.error("Error fetching categories:", error);
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }
@@ -50,35 +78,98 @@ function CategoriesSection() {
   const handleAddCategory = async () => {
     if (newCategory.trim()) {
       try {
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
         const response = await fetch(
-          "http://127.0.0.1:3000/spendify/api/categories/67cf12a40004818c2916",
+          "http://127.0.0.1:3000/spendify/api/categories",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+              Accept: "application/json",
+              Origin: window.location.origin,
             },
+            mode: "cors",
+            credentials: "include",
             body: JSON.stringify({
               name: newCategory.trim(),
               type: categoryType,
             }),
           }
         );
-        await response.json();
-        // Fetch updated categories after adding new one
-        fetchCategories();
-        setNewCategory("");
-        setCategoryType("expense");
-        setIsAdding(false);
+
+        if (!response.ok) {
+          throw new Error("Failed to add category");
+        }
+
+        const data = await response.json();
+        if (data.status === "success") {
+          // Fetch updated categories after adding new one
+          fetchCategories();
+          setNewCategory("");
+          setCategoryType("expense");
+          setIsAdding(false);
+        }
       } catch (error) {
         console.error("Error adding category:", error);
       }
     }
   };
 
-  const handleRemoveCategory = (categoryId) => {
-    setCategories(categories.filter((c) => c.$id !== categoryId));
-    if (selectedCategory === categoryId) {
-      setSelectedCategory("");
+  const handleRemoveCategory = async (categoryId) => {
+    try {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Find the category to get its name
+      const categoryToDelete = categories.find((c) => c.$id === categoryId);
+      if (!categoryToDelete) {
+        throw new Error("Category not found");
+      }
+
+      const response = await fetch(
+        `http://127.0.0.1:3000/spendify/api/categories`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+            Accept: "application/json",
+            Origin: window.location.origin,
+          },
+          mode: "cors",
+          credentials: "include",
+          body: JSON.stringify({
+            name: categoryToDelete.name,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete category");
+      }
+
+      const data = await response.json();
+      if (data.status === "success") {
+        setCategories(categories.filter((c) => c.$id !== categoryId));
+        if (selectedCategory === categoryId) {
+          setSelectedCategory("");
+        }
+      }
+    } catch (error) {
+      console.error("Error removing category:", error);
     }
   };
 

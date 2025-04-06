@@ -18,12 +18,12 @@ exports.signUp = catchAsync(async (req, res, next) => {
   const user = await authService.createUser(name, email, phone, password);
 
   // Generate JWT token
-  const token = generateToken(user.$id);
+  const token = generateToken(user.userId);
 
   res.status(201).json({
+    status: "success",
     message: "User registered successfully!",
     data: {
-      status: "success",
       email: user.email,
       token,
     },
@@ -32,13 +32,14 @@ exports.signUp = catchAsync(async (req, res, next) => {
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
+  console.log(email, password);
   if (!email || !password) {
     return next(new AppError("Email and password are required!", 400));
   }
   const session = await authService.loginUser(email, password);
 
   // Generate JWT token
-  const token = generateToken(session.$id);
+  const token = generateToken(session.userId);
 
   res.status(200).json({
     message: "User Logged in successfully!",
