@@ -5,7 +5,7 @@ Your smart personal income tracker – track, budget, and grow financially with 
 ![Image](https://github.com/user-attachments/assets/869b79ad-6b77-4c5d-8c2e-7a1518034f05)
 
 ##  Watch the Full Project Demo
-[![Watch Demo:](📼)](https://drive.google.com/file/d/1eYr6fqgbb_ijh8oiBe1wDIGYiyyLY3hf/view?usp=sharing)
+[![Watch Demo:]](https://drive.google.com/file/d/1eYr6fqgbb_ijh8oiBe1wDIGYiyyLY3hf/view?usp=sharing)
 
 ## Features
 
