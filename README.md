@@ -4,6 +4,8 @@ Your smart personal income tracker – track, budget, and grow financially with 
 
 ![Image](https://github.com/user-attachments/assets/869b79ad-6b77-4c5d-8c2e-7a1518034f05)
 
+[![Watch the whole demo here:](📼)](https://drive.google.com/file/d/1eYr6fqgbb_ijh8oiBe1wDIGYiyyLY3hf/view?usp=sharing)
+
 ## Features
 
 - **User Authentication**
@@ -39,25 +41,6 @@ Your smart personal income tracker – track, budget, and grow financially with 
   - Customizable categories
   - Payment method management
   - User preferences
-
-## Tech Stack
-
-### Frontend
-
-- React.js
-- Tailwind CSS
-- Appwrite (Authentication)
-- React Router (Navigation)
-- Chart.js (Data Visualization)
-
-### Backend
-
-- Node.js
-- Express.js
-- Appwrite (Database)
-- JWT Authentication
-
-## Getting Started
 
 ### Prerequisites
 
